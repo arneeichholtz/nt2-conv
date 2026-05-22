@@ -1,0 +1,189 @@
+VOORBEELD:
+Bakker: Welkom bij de Bakker. Wie is er aan de beurt?
+Klant: Ik ben!
+Bakker: Zegt u het maar. 
+Klant: Ik wou graag een halfje bruin.
+Bakker: Licht of donker?
+Klant: Lichtbruin alstublieft.
+Bakker: Gesneden?
+Klant: Ja, graag.
+Bakker: Anders nog iets? 
+Klant: Zes zachte witte broodjes, graag.
+Bakker: Anders nog iets? Krentenbollen misschien? Ze zijn in de aanbieding vandaag. Zes krentenbollen voor € 1,50. 
+Klant: Dat is niet duur! Oké, ik neem er zes.
+Bakker: Dat is het?
+Klant: Ja, dat is het. 
+Bakker: Dat is € 4,20.
+Klant: Alstublieft, € 4,20.
+Bakker: Dank u wel. Tot ziens.
+Klant: Tot ziens.
+
+VOORBEELD:
+Slager: Hallo, welkom bij de Slager. Wie kan ik helpen?
+Klant: Een half pond gehakt, graag.
+Slager: Anders nog iets? 
+Klant: Ja, twee hamburgers, alstublieft.
+Slager: Oké, twee hamburgers.
+Klant: En nog wat vleeswaren: anderhalf ons ham en een ons salami. 
+Slager: Kijk eens, alstublieft. Dat is alles?
+Klant: Ja.
+Slager: Dat is dan € 7,20, alstublieft. 
+Klant: Ik heb alleen een briefje van € 50,00.
+Slager: Geen probleem. Alstublieft, met € 42,80. Tot ziens.
+Klant: Tot ziens en fijn weekend!
+
+VOORBEELD:
+Groenteboer: Welkom bij de Groenteboer. Wie is er aan de beurt?
+Pieter: Twee kilo bananen alstublieft.
+Klant: Sorry, maar ik ben aan de beurt. 
+Pieter: Oh, sorry, hoor. He, Klant ... wat toevallig, jij ook hier?
+Klant: Verdomd, het is Pieter! Hoe gaat het?
+Pieter: Prima, en met jou? 
+Klant: Ook goed. Het was gezellig zaterdag op het feestje van Simone.
+Pieter: Ja zeker.
+Groenteboer: Eh..., heren, wie mag ik helpen? 
+Pieter: Oh, sorry, mevrouw. Hij is eerst.
+Klant: Dank je, je bent een echte heer. Eh, mag ik één krop sla en een kleine komkommer. 
+Groenteboer: Een krop sla, een komkommer...alstublieft. Anders nog iets?
+Klant: Anderhalf pond tomaten. 
+Groenteboer: Ja.
+Klant: En dan nog vier sinaasappels en een kilo appels. 
+Groenteboer: Kijkt u eens. Oh...we hebben vandaag een speciale aanbieding. Eén kilootje bananen voor € 1,00.
+Klant: Nee, dank u. Dat was alles. 
+Groenteboer: Prima. Dat is € 6,10 bij elkaar. Wilt u een tasje?
+Klant: Ja graag. Alstublieft, € 6,10. Dank u wel. 
+Groenteboer: Tot ziens en prettig weekend.
+Klant: U ook. Hé Pieter, ik zie je!
+Pieter: Ja, doei!
+
+VOORBEELD:
+verkoopster: Kan ik jullie misschien helpen?
+Mila: Nee, dank u. We kijken even rond.
+verkoopster: Prima! Als ik kan helpen, hoor ik het wel.
+Mila: Kijk, Hier hangt een blauwe rok. Maat 38, dat is goed, denk ik. Wat vind jij?
+Simone: Hij is leuk! Je moet hem even passen, denk ik.
+Mila: Ja. Eh, mevrouw, waar zijn de paskamers?
+verkoopster: De paskamers zijn daar, achter in de winkel.
+(in de paskamer)
+Mila: Jammer, de rok is te klein. Heeft u hem ook in maat 40?
+verkoopster: Ik zal even voor je kijken. Nee, helaas. Ik heb wel een zwarte in maat 40.
+Mila: Leuk! Die wil ik ook graag passen. Hij zit goed.
+Simone: Mooi!
+Mila: Heeft u misschien een grijs vest bij deze rok?
+verkoopster: Jazeker! Hier, alsjeblieft.
+Mila: Zo, even aantrekken… Simone, kijk eens!
+Simone: Hartstikke leuk! Dat vest staat goed bij die rok.
+Mila: Het zit ook lekker. Zal ik ze allebei nemen?
+Simone: Ja, dat moet je doen!
+Mila: Oké, ik ga even afrekenen.
+Simone: Prima, dan loop ik vast naar de schoenenzaak aan de overkant. Ik wil een paar laarzen kopen.
+Mila: Ja, dat is goed. Ik zie je zo.
+verkoopster: Heb je een keus gemaakt?
+Mila: Ja, ik neem de rok en het vest allebei.
+Verkoopster: Prima. … alsjeblieft, dat is dan € 79,90.
+Mila: Kan ik pinnen?
+verkoopster: Natuurlijk. Ga je gang.
+Mila: Dank u wel. Tot ziens.
+verkoopster: Tot ziens. En veel plezier ermee!
+
+VOORBEELD:
+Mila: Ik heb zin in koffie met gebak.
+Simone: Nou, ik heb ook wel trek in iets. Zullen we naar café De Bolle gaan? Daar hebben ze heerlijke cappuccino.
+Mila: Prima.
+(in het café)
+Ober: Goedemiddag, dames, zeg het maar.
+Mila: Twee cappuccino’s graag. Hebben jullie ook gebak?
+Ober: Ja, we hebben verse appeltaart of chocoladetaart.
+Simone: Ik wil graag een stukje appeltaart.
+Ober: Met slagroom?
+Simone: Ja, graag. En wat neem jij, Mila?
+Mila: Ik neem de chocoladetaart, maar zonder slagroom.
+Ober: Prima. Het komt er zo aan.
+Simone: Jeetje, hij lijkt een beetje op die verkoper uit de schoenenzaak. Hetzelfde postuur, dezelfde stem.
+Mila: Ja, inderdaad. Misschien zijn het wel broers.
+Simone: Wie weet, maar dan is deze het lelijke broertje.
+Mila: Stil, joh, daar komt hij!
+Ober: Zo, dames, kijk eens, twee cappuccino, een appeltaart en een chocoladetaart.
+Mila + Simone: Dank u wel.
+Mila: Meneer, mogen we de rekening?
+Ober: Ja natuurlijk. Heeft het gesmaakt?
+Simone: Ja, het was heerlijk!
+Ober: Dat is € 11,20 bij elkaar.
+Mila: € 12,00, alstublieft. Het is goed zo.
+Ober: Dank je wel en nog een fijne dag verder!
+Mila: U ook.
+
+VOORBEELD:
+Kapper: Goedemorgen, welkom bij de kapper. Heeft u een afspraak?
+Klant: Ja, om elf uur. Op de naam 'Jansen'.
+Kapper: Ah ja, ik zie het. Kom verder. Wilt u eerst gewassen worden?
+Klant: Nee hoor, dat hoeft niet.
+Kapper: Zegt u het maar. Hoe wilt u het hebben?
+Klant: Een flink stuk eraf, alstublieft. Vooral aan de zijkanten.
+Kapper: Moet het met de schaar of met de tondeuse?
+Klant: Met de tondeuse, op zes millimeter graag.
+Kapper: En de bovenkant? Ook een stuk korter?
+Klant: Ja, maar wel met de schaar. Een beetje rommelig mag wel.
+Kapper: Prima. (Even later) Zo, bent u tevreden? Wilt u nog wat gel of wax in uw haar?
+Klant: Ja, een beetje wax graag.
+Kapper: Kijk eens aan. Dat is dan € 24,50.
+Klant: Alstublieft, betaal ik zo gepast?
+Kapper: Jazeker, dank u wel. Tot de volgende keer!
+Klant: Tot ziens!
+
+VOORBEELD:
+Medewerker: Hallo, welkom bij de snackbar. Zegt u het maar.
+Klant: Mag ik een grote friet en een kroket, alstublieft?
+Medewerker: Wilt u de friet met saus?
+Klant: Ja, met mayonaise. En kan ik de kroket op een broodje krijgen?
+Medewerker: Natuurlijk. Een broodje kroket met mosterd?
+Klant: Nee, zonder mosterd graag.
+Medewerker: Anders nog iets? Een milkshake of een colaatje misschien?
+Klant: Doe er ook maar een kleine cola bij.
+Medewerker: Is dat om hier op te eten of mee te nemen?
+Klant: Om mee te nemen, graag.
+Medewerker: Dat is dan € 8,40 bij elkaar.
+Klant: Kan ik pinnen?
+Medewerker: Ja hoor, daar staat het apparaat. Dank u.
+Klant: Bedankt, fijne avond nog.
+Medewerker: Insgelijks, eet smakelijk!
+
+VOORBEELD:
+Verkoopster: Goedemiddag, welkom in de kledingwinkel. kan ik u ergens mee helpen of kijkt u even rond?
+Klant: Ik zoek een spijkerbroek, een blauwe.
+Verkoopster: Welke maat heeft u?
+Klant: Maat 32, denk ik.
+Verkoopster: Kijk, deze modellen zijn nu in de aanbieding. Twee voor € 80,00.
+Klant: Dat is een goede deal. Waar zijn de paskamers?
+Verkoopster: Achterin, naast de kassa.
+Klant: (Komt even later terug) Deze zit goed, maar heeft u die andere ook in het zwart?
+Verkoopster: Jazeker, ik pak hem even voor u. Kijk eens.
+Klant: Dank u. Ik neem ze allebei: de blauwe en de zwarte.
+Verkoopster: Goede keuze. Wilt u er misschien nog een riem bij? Die zijn vandaag met 10% korting.
+Klant: Nee dank u, ik heb thuis nog een goede riem.
+Verkoopster: Geen probleem. Dat is dan € 80,00 alstublieft.
+Klant: Alstublieft, € 80,00.
+Verkoopster: Dank u wel. Wilt u er een bonnetje bij?
+Klant: Ja graag, voor de zekerheid.
+Verkoopster: Alstublieft. Veel plezier ermee en tot ziens!
+Klant: Dag!
+
+VOORBEELD:
+Verkoopster: Goedemiddag, welkom in de kledingwinkel. kan ik u ergens mee helpen of kijkt u even rond?
+Klant: Ik zoek een trui.
+Verkoopster: Welke maat heeft u?
+Klant: Maat XL, denk ik.
+Verkoopster: Kijk, deze truien voor de winter zijn nu in de aanbieding. Twee voor € 80,00.
+Klant: Dat is een goede deal. In welke kleuren is de trui beschikbaar?
+Verkoopster: Blauw, zwart, grijs en groen.
+Klant: Waar zijn de paskamers?
+Verkoopster: Achterin, naast de kassa.
+Klant: (Komt even later terug) Ik vind de groene en zwarte trui erg mooi. Ik neem ze allebei.
+Verkoopster: Goede keuze. Wilt u er nog een broek bij?
+Klant: Nee dank u, ik heb genoeg broeken thuis.
+Verkoopster: Geen probleem. Dat is dan € 80,00 alstublieft.
+Klant: Alstublieft, € 80,00.
+Verkoopster: Dank u wel. Wilt u er een bonnetje bij?
+Klant: Ja graag, voor de zekerheid.
+Verkoopster: Alstublieft. Veel plezier ermee en tot ziens!
+Klant: Dag!

@@ -1,0 +1,40 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+nt2-env/
+
+# Environment files
+.env
+.env.*
+
+# Test and type check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Coverage and build artifacts
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# Model and data artifacts
+*.json
+*.onnx
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
+test.py
