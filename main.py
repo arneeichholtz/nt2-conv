@@ -57,8 +57,6 @@ def test_asr() -> None:
 if __name__ == "__main__":
 	
 	# _test_asr()
-	# Language level of student is given
-	# Conversation subject is given (e.g., Kennismaken)
 	
 	root = Path(__file__).resolve().parent
 	config = load_config(root / "config.yml")

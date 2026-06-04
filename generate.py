@@ -50,6 +50,9 @@ def start_conversation(
 		theme_prompt = read_text_file(Path(theme_prompt_path))
 	topic_context = read_text_file(Path(topic_file_path))
 	system_instruction = build_system_instruction(level_prompt, theme_prompt, topic_context)
+
+	# print("\n--- SYSTEM INSTRUCTION ---")
+	# print(system_instruction)
 	
 	chain = create_chain(model_name=model_name, temperature=temperature)
 	response = chain.invoke(

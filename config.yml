@@ -1,9 +1,11 @@
-model_name: gemma4:e2b        # Meeting: misschien andere modelen die beter werken, misschien GPT-NL.
+model_name: gemma4:e2b        
 temperature: 1
-conversation_theme: winkelen
+
+conversation_theme: kennismaken          # options: winkelen, kennismaken
 language_level: A2
-input_format: speech
-output_format: speech
+input_format: speech                       # speech or text
+output_format: speech                      # speech or text
+
 tts_model_path: voices/nl_NL-ronnie-medium.onnx
 tts_config_path: voices/nl_NL-ronnie-medium.onnx.json
 tts_speaker_id: null    # Used in the case of multiple speakers.
