@@ -1,10 +1,22 @@
-model_name: gemma4:e2b        
-temperature: 1
+conversation_model_name: qwen2.5:7b-instruct      # qwen2.5         # gemma4:e2b        
+conversation_temperature: 1
+conversation_keep_alive: 3m
+conversation_reasoning: True
 
-conversation_theme: kennismaken          # options: winkelen, kennismaken
+conversation_theme: wonen          # options: winkelen, kennismaken, wonen
 language_level: A2
-input_format: speech                       # speech or text
-output_format: speech                      # speech or text
+input_format: text                       # speech or text
+output_format: text                      # speech or text
+
+language_check_mode: regels                    # options: uit, llm, regels
+language_check_rules: [woordvolgorde]          # options: woordvolgorde, vervoeging
+print_error_type: False                         # True = show the specific checker error (used during testing), False = show a generic message -- only for word order checks
+correct_errors: True                           # True = ask the LLM to correct recorded word-order and conjugation mistakes after the conversation
+
+checker_model_name: qwen2.5:7b-instruct           # used when language_check_mode is llm
+checker_temperature: 0
+checker_keep_alive: 3m 
+checker_reasoning: True
 
 tts_model_path: voices/nl_NL-ronnie-medium.onnx
 tts_config_path: voices/nl_NL-ronnie-medium.onnx.json

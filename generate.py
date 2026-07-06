@@ -4,15 +4,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable
 
 from langchain_community.chat_models import ChatOllama
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-
-def read_text_file(path: Path) -> str:
-	return path.read_text(encoding="utf-8")
+from language_check import read_text_file
 
 
 def build_system_instruction(level_prompt: str, theme_prompt: str, topic_context: str) -> str:
@@ -24,23 +22,28 @@ def build_system_instruction(level_prompt: str, theme_prompt: str, topic_context
 	)
 
 
-def create_chain(model_name: str, temperature: float) -> ChatPromptTemplate:
+def create_chain(model_name: str, temperature: float, keep_alive: str = "2m", reasoning: bool = True) -> ChatPromptTemplate:
 	prompt = ChatPromptTemplate.from_messages(
 		[
 			("system", "{system_instruction}"),
 			MessagesPlaceholder(variable_name="messages"),
 		]
 	)
-	llm = ChatOllama(model=model_name, temperature=temperature)
-	return prompt | llm
+	llm = ChatOllama(model=model_name, 
+					 temperature=temperature, 
+					 keep_alive=keep_alive,
+					 reasoning=reasoning)
+	return prompt | llm			# Builds and returns a langchain pipeline -- first formats the prompt, then calls the llm
 
 
 def start_conversation(
 	level_prompt_path: str | Path,
 	theme_prompt_path: str | Path,
 	topic_file_path: str | Path,
-	model_name: str = "gemma4:e2b",
-	temperature: float = 0.7,
+	model_name: str,
+	temperature: float,
+	keep_alive: str = "2m",
+	reasoning: bool = False,
 	**kwargs
 ) -> str:
 	level_prompt = read_text_file(Path(level_prompt_path))
@@ -54,7 +57,7 @@ def start_conversation(
 	# print("\n--- SYSTEM INSTRUCTION ---")
 	# print(system_instruction)
 	
-	chain = create_chain(model_name=model_name, temperature=temperature)
+	chain = create_chain(model_name=model_name, temperature=temperature, keep_alive=keep_alive, reasoning=reasoning)
 	response = chain.invoke(
 		{
 			"system_instruction": system_instruction,
@@ -69,8 +72,10 @@ def generate_reply(
 	theme_prompt_path: str | Path,
 	topic_file_path: str | Path,
 	messages: Iterable[BaseMessage],
-	model_name: str = "gemma4:e2b",
-	temperature: float = 0.7,
+	model_name: str,
+	temperature: float,
+	keep_alive: str = "2m",
+	reasoning: bool = False,
 	**kwargs
 ) -> str:
 	level_prompt = read_text_file(Path(level_prompt_path))
@@ -81,11 +86,14 @@ def generate_reply(
 
 	topic_context = read_text_file(Path(topic_file_path))
 	system_instruction = build_system_instruction(level_prompt, theme_prompt, topic_context)
+	
+	# print("\n--- SYSTEM INSTRUCTION (generate reply) ---")
+	# print(system_instruction)
 
-	chain = create_chain(model_name=model_name, temperature=temperature)
+	chain = create_chain(model_name=model_name, temperature=temperature, keep_alive=keep_alive, reasoning=reasoning)
 	response = chain.invoke(
 		{
-			"system_instruction": system_instruction,
+			"system_instruction": system_instruction,		# System instruction needs to be passed for every reply call since LLM APIs completely forget any previous question ("stateless")
 			"messages": list(messages),     # Includes both human and AI responses
 		}
 	)

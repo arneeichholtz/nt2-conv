@@ -1,40 +1,24 @@
-
-# The NT2 conversation tool is built out of the following functionality:
-
-# 1. Automatic speech recogntion using Whisper or wav2vec2 to transcribe audio input into a text user query
-
-# 2. A database where the context information is stored, which will be example conversations/phrases and 
-# vocab lists corresponding to the student language level
-# - How will these be stored? Do we extract full conversations, or only phrases? 
-#   How do we store and retrieve the vocab list?
-# - What other elements are useful to store in the database?
-
-# 3. A RAG/LLM component to do the following:
-# - Find the relevant documents for the given user query; this can be parts of a conversion or vocab list
-# - Generate a response with an LLM based on the retrieved documents and query
-
-# 4. A text-to-speech component to convert the generated response into audio output for the user
-
-
 from pathlib import Path
 import string
+import time
 import yaml
 import random
 from asr import WhisperASR
 from langchain_core.messages import AIMessage, HumanMessage
 
-from generate import generate_reply, start_conversation
+from generate import create_chain, generate_reply, start_conversation
+from language_check import check_llm_language_issue, check_manual_language_issue
 from text_to_speech import TextToSpeech
 import torch
 
 
-# def check_gpu():
-# 	print("\n--- GPU CHECK ---")
-# 	if torch.cuda.is_available():
-# 		print(f"GPU detected byPython: {torch.cuda.get_device_name(0)}")
-# 	else:
-# 		print("No GPU detected. Python will use the CPU.")
-# 	print("-----------------\n")
+DEFAULT_LANGUAGE_ERROR_MESSAGE = "De woordvolgorde is niet helemaal correct, probeer het nog eens."
+DEFAULT_CONJUGATION_ERROR_MESSAGE = "De werkwoordvervoeging is niet helemaal correct, probeer het nog eens."
+WORD_ORDER_ERROR_LABELS = {
+	"SUBORDINATE_CLAUSE_VIOLATION": "werkwoord moet aan het einde",
+	"VERBAL_END_SEQUENCE_VIOLATION": "hoofdwerkwoord moet aan het einde",
+	"V2_VIOLATION": "persoonsvorm moet op de tweede plaats",
+}
 
 
 def load_config(path: Path) -> dict:
@@ -44,6 +28,30 @@ def load_config(path: Path) -> dict:
 	return data or {}
 
 
+def format_language_feedback(language_feedback: str, print_error_type: bool, check: str | None = None) -> str:
+	if print_error_type:
+		return language_feedback
+
+	if check == "conjugation":
+		return DEFAULT_CONJUGATION_ERROR_MESSAGE
+	if check == "word_order":
+		return DEFAULT_LANGUAGE_ERROR_MESSAGE
+
+	language_feedback_lower = language_feedback.lower()
+	if "vervoeging" in language_feedback_lower:
+		return DEFAULT_CONJUGATION_ERROR_MESSAGE
+	if "woordvolgorde" in language_feedback_lower or "volgorde" in language_feedback_lower:
+		return DEFAULT_LANGUAGE_ERROR_MESSAGE
+
+	return "Deze zin is niet helemaal correct, probeer het nog eens."
+
+
+def describe_word_order_error(error_type: str | None) -> str:
+	if not error_type:
+		return "woordvolgorde"
+	return WORD_ORDER_ERROR_LABELS.get(error_type, error_type.lower())
+
+
 def test_asr() -> None:
 	asr = WhisperASR(model_name="small", language="nl", device="cpu")
 	print("Speak now. Recording will stop after silence or timeout.")
@@ -51,24 +59,51 @@ def test_asr() -> None:
 	print(f"Transcription: {text}")
 
 
-# Meeting: generate function to show GPU memory.
-# Meeting: make github so Lou can test code.
+def correct_saved_errors(
+	label: str,
+	sentences: list[str],
+	correction_chain,
+	correction_prompt_path: Path,
+) -> None:
+	if not sentences:
+		return
+
+	print(f"\nFEEDBACK -- {label}:")
+	correction_prompt = correction_prompt_path.read_text(encoding="utf-8")
+	for sentence in sentences:
+		correction_response = correction_chain.invoke(
+			{
+				"system_instruction": correction_prompt,
+				"messages": [HumanMessage(content=sentence)],
+			}
+		)
+		correct_sentence = correction_response.content.strip()
+		print(f"{sentence} -> {correct_sentence}")
+
 
 if __name__ == "__main__":
 	
-	# _test_asr()
-	
 	root = Path(__file__).resolve().parent
 	config = load_config(root / "config.yml")
-	model_name = config["model_name"]
-	temperature = float(config["temperature"])
-	input_format = str(config.get("input_format", "text")).strip().lower()
-	output_format = str(config.get("output_format", "text")).strip().lower()
+
+	conversation_model_name = config.get("conversation_model_name")
+	conversation_temperature = config.get("conversation_temperature")
+	conversation_keep_alive = config.get("conversation_keep_alive")
+	conversation_reasoning = config.get("conversation_reasoning")
+	print(f"Using conversation model: {conversation_model_name} with temperature: {conversation_temperature}")
+	print(f"Conversation keep_alive: {conversation_keep_alive}, reasoning: {conversation_reasoning}")
+	
+	language_check_mode = config.get("language_check_mode", "regels")
+	print_error_type = config.get("print_error_type", False)
+	correct_errors = config.get("correct_errors", False)
+	
+	input_format = config.get("input_format", "text")
+	output_format = config.get("output_format", "text")
 	tts_model_path = config.get("tts_model_path")
 	tts_config_path = config.get("tts_config_path")
-	tts_speaker_id = config.get("tts_speaker_id")
-	conversation_theme = str(config.get("conversation_theme", "kennismaken")).strip().lower()
-	language_level = str(config.get("language_level", "A2")).strip()
+
+	conversation_theme = config.get("conversation_theme", "kennismaken")
+	language_level = config.get("language_level", "A2")
 
 	if input_format not in {"text", "speech"}:
 		print(f"Unknown input_format '{input_format}', falling back to text.")
@@ -76,9 +111,22 @@ if __name__ == "__main__":
 	if output_format not in {"text", "speech"}:
 		print(f"Unknown output_format '{output_format}', falling back to text.")
 		output_format = "text"
-
-	print(f"Using model: {model_name} with temperature: {temperature}")
-
+	
+	if language_check_mode == "llm":
+		checker_model_name = config.get("checker_model_name")
+		checker_temperature = config.get("checker_temperature")
+		checker_keep_alive = config.get("checker_keep_alive")
+		checker_reasoning = config.get("checker_reasoning")
+		print(f"Using checker model: {checker_model_name} with temperature: {checker_temperature}")
+		print(f"Checker keep_alive: {checker_keep_alive}, reasoning: {checker_reasoning}")
+	
+	elif language_check_mode == "regels":
+		manual_language_checks = config.get("language_check_rules", ["woordvolgorde"])
+		print(f"Using manual language checks: {', '.join(manual_language_checks)}")
+	else:
+		manual_language_checks = []
+		print("Language checker is disabled")
+	
 	device = "cuda" if torch.cuda.is_available() else "cpu"
 	print(f"Using device: {device}")
 	asr = WhisperASR(model_name="small", language="nl", device=device) if input_format == "speech" else None
@@ -103,16 +151,17 @@ if __name__ == "__main__":
 				tts = TextToSpeech(
 					model_path=model_path,
 					config_path=config_path,
-					speaker_id=tts_speaker_id,
 				)
 	else:
 		tts = None
 
+	# Load file paths
 	level_prompt_path = root / "prompts" / f"prompt_{language_level}.txt"
 	theme_prompt_path = root / "prompts" / f"prompt_{conversation_theme}.txt"
+	checker_prompt_path = root / "prompts" / "prompt_taalcontrole.txt"
+	correction_prompt_path = root / "prompts" / "prompt_correctie.txt"
 	topic_file_path = root / "data" / conversation_theme / f"{conversation_theme}.txt"
 	options_file_path = root / "data" / conversation_theme / f"{conversation_theme}_opties.txt"
-	
 	
 	location = ""
 	if options_file_path.exists():
@@ -122,12 +171,15 @@ if __name__ == "__main__":
 			location = random.choice(location_options)
 			print(f"Gekozen locatie: {location}")
 
+	start_time = time.perf_counter()
 	first_line = start_conversation(
 		level_prompt_path,
 		theme_prompt_path,
 		topic_file_path,
-		model_name=model_name,
-		temperature=temperature,
+		model_name=conversation_model_name,
+		temperature=conversation_temperature,
+		keep_alive=conversation_keep_alive,
+		reasoning=conversation_reasoning,
 		locatie=location
 	)
 
@@ -136,6 +188,14 @@ if __name__ == "__main__":
 		tts.speak(first_line)
 
 	messages = [AIMessage(content=first_line)]
+	word_order_errors: list[str] = []
+	conjugation_errors: list[str] = []
+	correction_chain = create_chain(
+		model_name=conversation_model_name,
+		temperature=conversation_temperature,
+		keep_alive=conversation_keep_alive,
+		reasoning=conversation_reasoning,
+	)
 	while True:
 		if input_format == "speech":
 			print("Luister... spreek nu.")
@@ -149,26 +209,78 @@ if __name__ == "__main__":
 			if not user_text:
 				continue
 
-		clean_text = user_text.lower().translate(str.maketrans("", "", string.punctuation)).strip()
-		if clean_text in {"/quit", "/exit", "tot ziens", "doei", "stop"}:
+		clean_text = user_text.lower().translate(str.maketrans("", "", string.punctuation)).strip()		# Remove punctuation and whitespace for comparison
+		if clean_text in {"/quit", "/exit", "tot ziens", "doei", "stop", "fijne dag", "fijn weekend", "bedankt", "dankjewel", "dank u wel", "dank je wel"}:
 			print("Gesprek gestopt.")
 			break
 
+		last_question = messages[-1].content if messages else ""
+
+		language_feedback = None
+		if language_check_mode == "llm":
+			checker_start_time = time.perf_counter()
+			language_feedback = check_llm_language_issue(
+				checker_prompt_path,
+				last_question,        # Meest recente vraag van LLM
+				user_text,            # Tekst van gebruiker
+				model_name=checker_model_name,
+				temperature=checker_temperature,
+				keep_alive=checker_keep_alive,
+				reasoning=checker_reasoning,
+				locatie=location,
+			)
+			print(f"[timing] Language checker took {time.perf_counter() - checker_start_time:.3f}s")
+		elif language_check_mode == "regels":
+			checker_start_time = time.perf_counter()
+			manual_language_result = check_manual_language_issue(
+				user_text,
+				rules=manual_language_checks,
+				return_details=True,
+			)
+			if not manual_language_result["correct"]:
+				language_feedback = manual_language_result["message"]
+				if correct_errors:
+					checks = manual_language_result.get("checks") or [manual_language_result.get("check")]
+					if "word_order" in checks:
+						word_order_errors.append(user_text)
+					if "conjugation" in checks:
+						conjugation_errors.append(user_text)
+			print(f"[timing] Language checker took {time.perf_counter() - checker_start_time:.3f}s")
+
+		if language_feedback:
+			feedback_to_print = format_language_feedback(
+				language_feedback,
+				print_error_type,
+				manual_language_result.get("check") if language_check_mode == "regels" else None,
+			)
+			print(f"Taalfeedback: {feedback_to_print}")
+			if output_format == "speech" and tts is not None:
+				tts.speak(feedback_to_print)
+			continue
+
+		reply_start_time = time.perf_counter()
 		messages.append(HumanMessage(content=user_text))
 		reply = generate_reply(
 			level_prompt_path,
 			theme_prompt_path,
 			topic_file_path,
 			messages,
-			model_name=model_name,
-			temperature=temperature,
+			model_name=conversation_model_name,
+			temperature=conversation_temperature,
+			keep_alive=conversation_keep_alive,
+			reasoning=conversation_reasoning,
 			locatie=location
 		)
+		print(f"[timing] Conversation model took {time.perf_counter() - reply_start_time:.3f}s")
 
 		print(reply)
 		if output_format == "speech" and tts is not None:
 			tts.speak(reply)
 		messages.append(AIMessage(content=reply))
+
+	if correct_errors:
+		correct_saved_errors("je maakte deze woordvolgorde fouten", word_order_errors, correction_chain, correction_prompt_path)
+		correct_saved_errors("je maakte deze vervoegingsfouten", conjugation_errors, correction_chain, correction_prompt_path)
 
 
 

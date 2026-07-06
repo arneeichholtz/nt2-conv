@@ -38,3 +38,5 @@ Thumbs.db
 .vscode/
 
 test.py
+test_order.py
+test_vervoeging.py

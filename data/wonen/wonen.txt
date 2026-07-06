@@ -62,9 +62,7 @@ Willem: Woon je in het centrum van Eindhoven?
 Theo: Nee, net buiten het centrum.
 Willem: Woon je daar graag?
 Theo: Ja, alles is dichtbij en het is goedkoper.
-Willem: Hoe ziet je huis er van binnen uit?
-Theo: De muren zijn wit en de vloer is van hout.
-Willem: Dat klinkt mooi. Heb je ook een tuin bij je huis?
+Willem: Heb je ook een tuin bij je huis?
 Theo: Ja, ik heb een grote tuin achter mijn huis.
 Willem: Zit je vaak in de tuin?
 Theo: Ja, in de zomer elke dag en ik heb een moestuin.

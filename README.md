@@ -17,7 +17,7 @@ A Dutch NT2 conversation assistant that combines:
    ```
    pip install -r requirements.txt
    ```
-3. Update `config.yml` as needed (input/output formats, model, theme, and TTS paths).
+3. Update `config.yml` as needed (input/output formats, model, theme, TTS paths, and language-check settings).
 
 ## Run
 ```
@@ -27,3 +27,4 @@ python main.py
 ## Notes
 - For speech input, your system needs a working microphone and `pyaudio` support.
 - TTS output requires a valid `.onnx` model and `.onnx.json` config in `voices/`.
+- Set `print_error_type: true` in `config.yml` to show the specific language-check error during testing; leave it `false` to show a generic message to the learner.

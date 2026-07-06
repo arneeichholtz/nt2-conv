@@ -24,7 +24,7 @@ class TextToSpeech:
 	) -> None:
 		self.model_path = Path(model_path)
 		self.config_path = Path(config_path)
-		self.speaker_id = speaker_id
+		# self.speaker_id = speaker_id
 		if not self.model_path.exists():
 			raise FileNotFoundError(f"Piper model not found: {self.model_path}")
 		if not self.config_path.exists():
@@ -47,11 +47,10 @@ class TextToSpeech:
 
 		try:
 			with wave.open(str(output_path), "wb") as wav_file:
-				self.voice.synthesize_wav(
-					text,
-					wav_file,
-					syn_config=self.synthesis_config,
-				)
+				if self.synthesis_config is None:
+					self.voice.synthesize_wav(text, wav_file)
+				else:
+					self.voice.synthesize_wav(text, wav_file, syn_config=self.synthesis_config)
 			winsound.PlaySound(str(output_path), winsound.SND_FILENAME)
 		finally:
 			try:
