@@ -1,36 +1,42 @@
 import collections
 import time
+import wave
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import pyaudio
-import torch
 import webrtcvad
-import whisper
+from faster_whisper import WhisperModel
 
 
 class WhisperASR:
-	"""Microphone ASR using Whisper with VAD-based endpointing."""
+	"""Microphone ASR using FasterWhisper with VAD-based endpointing."""
 
 	def __init__(
 		self,
-		model_name: str = "small",		# Meeting: vervangen door FastWhisper.
+		model_name: str = "small",
 		language: str = "nl",
 		sample_rate: int = 16000,
-		vad_aggressiveness: int = 2,		# sensitivity to speech activity detection. 0 is more likely to classify noise as speech, 3 only clear speech is detected. 
+		vad_aggressiveness: int = 2,
 		download_root: Optional[str] = None,
 		device: Optional[str] = None,
+		save_directory: Optional[str] = None,
+		save_recordings: bool = False,
+		save_transcriptions: bool = False,
 	) -> None:
 		self.language = language
 		self.sample_rate = sample_rate
 		self.vad = webrtcvad.Vad(vad_aggressiveness)
-		self.device = device
-		self.fp16 = self.device != "cpu"
-
-		self.model = whisper.load_model(
+		self.device = device or "cpu"
+		self.save_directory = Path(save_directory) if save_directory else None
+		self.save_recordings = save_recordings
+		self.save_transcriptions = save_transcriptions
+		self.model = WhisperModel(
 			model_name,
 			device=self.device,
 			download_root=download_root,
+			compute_type="float16" if self.device != "cpu" else "int8",
 		)
 
 	@staticmethod
@@ -45,7 +51,7 @@ class WhisperASR:
 		pa.terminate()
 		return devices
 
-	def _open_stream(self, device_index: Optional[int], block_size: int) -> tuple[pyaudio.PyAudio, pyaudio.Stream]:
+	def open_stream(self, device_index: Optional[int], block_size: int) -> tuple[pyaudio.PyAudio, pyaudio.Stream]:
 		pa = pyaudio.PyAudio()
 		stream = pa.open(
 			format=pyaudio.paInt16,
@@ -57,20 +63,39 @@ class WhisperASR:
 		)
 		return pa, stream
 
+	def save_utterance(self, audio: np.ndarray, transcript: str) -> None:
+		if self.save_directory is None:
+			return
+
+		self.save_directory.mkdir(parents=True, exist_ok=True)
+		timestamp = time.strftime("%Y%m%d-%H%M%S")
+
+		if self.save_recordings:
+			audio_path = self.save_directory / f"{timestamp}.wav"
+			with wave.open(str(audio_path), "wb") as wav_file:
+				wav_file.setnchannels(1)
+				wav_file.setsampwidth(2)
+				wav_file.setframerate(self.sample_rate)
+				wav_file.writeframes(np.clip(audio * 32767.0, -32768, 32767).astype(np.int16).tobytes())
+
+		if self.save_transcriptions:
+			transcript_path = self.save_directory / f"{timestamp}.txt"
+			transcript_path.write_text(transcript.strip() + "\n", encoding="utf-8")
+
 	def record_utterance(
 		self,
 		device_index: Optional[int] = None,
 		max_record_seconds: float = 20.0,
 		padding_ms: int = 300,
 		silence_ms: int = 600,
-		frame_ms: int = 10,     # Size of the audio frame fed to the voice-activity detector. Smaller means more responsive.
+		frame_ms: int = 10,
 	) -> Optional[np.ndarray]:
 		"""Record a single utterance using VAD. Returns float32 audio."""
-		block_size = int(self.sample_rate * frame_ms / 1000)        # block_size=480
+		block_size = int(self.sample_rate * frame_ms / 1000)
 		if block_size <= 0:
 			raise ValueError("frame_ms results in empty block size")
 
-		pa, stream = self._open_stream(device_index, block_size)
+		pa, stream = self.open_stream(device_index, block_size)
 
 		ring_buffer = collections.deque(maxlen=max(1, padding_ms // frame_ms))
 		voiced_frames: list[bytes] = []
@@ -119,20 +144,19 @@ class WhisperASR:
 		if audio is None or len(audio) == 0:
 			return ""
 
-		audio = whisper.pad_or_trim(audio)
-		result = self.model.transcribe(
+		segments, _info = self.model.transcribe(
 			audio,
 			language=self.language,
-			fp16=self.fp16,
-			task="transcribe",
+			beam_size=5,
+			vad_filter=False,
 			initial_prompt=initial_prompt,
-			verbose=False,
 		)
-		return result.get("text", "").strip()
+		text = " ".join(segment.text.strip() for segment in segments).strip()
+		return text
 
 	def listen_and_transcribe(
 		self,
-		device_index: Optional[int] = None,     # Device index is the index of the microphone input device to use. If None, the current default is used
+		device_index: Optional[int] = None,
 		max_record_seconds: float = 20.0,
 		initial_prompt: Optional[str] = None,
 	) -> str:
@@ -140,8 +164,11 @@ class WhisperASR:
 			device_index=device_index,
 			max_record_seconds=max_record_seconds,
 		)
-		return self.transcribe(audio, initial_prompt=initial_prompt)
-	
+		transcript = self.transcribe(audio, initial_prompt=initial_prompt)
+		if audio is not None:
+			self.save_utterance(audio, transcript)
+		return transcript
+
 
 
 def test_asr() -> None:
@@ -150,6 +177,6 @@ def test_asr() -> None:
 	text = asr.listen_and_transcribe()
 	print(f"Transcription: {text}")
 
+
 if __name__ == "__main__":
 	test_asr()
-

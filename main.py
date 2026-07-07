@@ -8,17 +8,13 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from generate import create_chain, generate_reply, start_conversation
 from language_check import check_llm_language_issue, check_manual_language_issue
-from text_to_speech import TextToSpeech
+from talking_head import create_talking_head_renderer
+from text_to_speech import create_text_to_speech
 import torch
 
 
 DEFAULT_LANGUAGE_ERROR_MESSAGE = "De woordvolgorde is niet helemaal correct, probeer het nog eens."
 DEFAULT_CONJUGATION_ERROR_MESSAGE = "De werkwoordvervoeging is niet helemaal correct, probeer het nog eens."
-WORD_ORDER_ERROR_LABELS = {
-	"SUBORDINATE_CLAUSE_VIOLATION": "werkwoord moet aan het einde",
-	"VERBAL_END_SEQUENCE_VIOLATION": "hoofdwerkwoord moet aan het einde",
-	"V2_VIOLATION": "persoonsvorm moet op de tweede plaats",
-}
 
 
 def load_config(path: Path) -> dict:
@@ -28,9 +24,7 @@ def load_config(path: Path) -> dict:
 	return data or {}
 
 
-def format_language_feedback(language_feedback: str, print_error_type: bool, check: str | None = None) -> str:
-	if print_error_type:
-		return language_feedback
+def format_language_feedback(language_feedback: str, check: str | None = None) -> str:
 
 	if check == "conjugation":
 		return DEFAULT_CONJUGATION_ERROR_MESSAGE
@@ -44,12 +38,6 @@ def format_language_feedback(language_feedback: str, print_error_type: bool, che
 		return DEFAULT_LANGUAGE_ERROR_MESSAGE
 
 	return "Deze zin is niet helemaal correct, probeer het nog eens."
-
-
-def describe_word_order_error(error_type: str | None) -> str:
-	if not error_type:
-		return "woordvolgorde"
-	return WORD_ORDER_ERROR_LABELS.get(error_type, error_type.lower())
 
 
 def test_asr() -> None:
@@ -94,13 +82,15 @@ if __name__ == "__main__":
 	print(f"Conversation keep_alive: {conversation_keep_alive}, reasoning: {conversation_reasoning}")
 	
 	language_check_mode = config.get("language_check_mode", "regels")
-	print_error_type = config.get("print_error_type", False)
 	correct_errors = config.get("correct_errors", False)
 	
 	input_format = config.get("input_format", "text")
 	output_format = config.get("output_format", "text")
-	tts_model_path = config.get("tts_model_path")
-	tts_config_path = config.get("tts_config_path")
+	tts_engine = config.get("tts_engine", "piper")
+	tts_speaker_id = config.get("tts_speaker_id")
+	piper_model_path = config.get("piper_model_path", config.get("tts_model_path"))
+	piper_config_path = config.get("piper_config_path", config.get("tts_config_path"))
+	talking_head_backend = config.get("talking_head", "uit")
 
 	conversation_theme = config.get("conversation_theme", "kennismaken")
 	language_level = config.get("language_level", "A2")
@@ -129,29 +119,46 @@ if __name__ == "__main__":
 	
 	device = "cuda" if torch.cuda.is_available() else "cpu"
 	print(f"Using device: {device}")
-	asr = WhisperASR(model_name="small", language="nl", device=device) if input_format == "speech" else None
+	asr = WhisperASR(model_name="small", language="nl", device=device) if input_format == "speech" else None		# ASR using FasterWhisper
 
 	if output_format == "speech":
-		if not tts_model_path or not tts_config_path:
-			print("Missing tts_model_path or tts_config_path in config.yml. Falling back to text output.")
-			output_format = "text"
-			tts = None
-		else:
-			model_path = Path(tts_model_path)
-			config_path = Path(tts_config_path)
-			if not model_path.is_absolute():
-				model_path = root / model_path
-			if not config_path.is_absolute():
-				config_path = root / config_path
-			if not model_path.exists() or not config_path.exists():
-				print("Piper model or config file not found. Falling back to text output.")
-				output_format = "text"
-				tts = None
+		tts = None
+		if talking_head_backend not in {"", "uit", "off", "none", "false", "0"}:
+			try:
+				tts = create_talking_head_renderer(root, talking_head_backend, tts_engine)
+				print(f"Using talking head backend: {talking_head_backend} ({tts_engine})")
+			except Exception as exc:
+				raise RuntimeError(
+					f"Talking head init failed for backend '{talking_head_backend}' and engine '{tts_engine}': {exc}"
+				) from exc
+
+		if tts is None:
+			if str(tts_engine).strip().lower() == "gtts":
+				tts = create_text_to_speech(tts_engine, language="nl")
 			else:
-				tts = TextToSpeech(
-					model_path=model_path,
-					config_path=config_path,
-				)
+				if not piper_model_path or not piper_config_path:
+					print("Missing piper_model_path or piper_config_path in config.yml. Falling back to text output.")
+					output_format = "text"
+					tts = None
+				else:
+					model_path = Path(piper_model_path)
+					config_path = Path(piper_config_path)
+					if not model_path.is_absolute():
+						model_path = root / model_path
+					if not config_path.is_absolute():
+						config_path = root / config_path
+					if not model_path.exists() or not config_path.exists():
+						print("Piper model or config file not found. Falling back to text output.")
+						output_format = "text"
+						tts = None
+					else:
+						tts = create_text_to_speech(
+							tts_engine,
+							model_path=model_path,
+							config_path=config_path,
+							speaker_id=tts_speaker_id,
+							use_cuda=device == "cuda",
+						)
 	else:
 		tts = None
 
@@ -160,8 +167,8 @@ if __name__ == "__main__":
 	theme_prompt_path = root / "prompts" / f"prompt_{conversation_theme}.txt"
 	checker_prompt_path = root / "prompts" / "prompt_taalcontrole.txt"
 	correction_prompt_path = root / "prompts" / "prompt_correctie.txt"
-	topic_file_path = root / "data" / conversation_theme / f"{conversation_theme}.txt"
-	options_file_path = root / "data" / conversation_theme / f"{conversation_theme}_opties.txt"
+	topic_file_path = root / "voorbeelden" / conversation_theme / f"{conversation_theme}.txt"
+	options_file_path = root / "voorbeelden" / conversation_theme / f"{conversation_theme}_opties.txt"
 	
 	location = ""
 	if options_file_path.exists():
@@ -171,7 +178,7 @@ if __name__ == "__main__":
 			location = random.choice(location_options)
 			print(f"Gekozen locatie: {location}")
 
-	start_time = time.perf_counter()
+	# start_time = time.perf_counter()
 	first_line = start_conversation(
 		level_prompt_path,
 		theme_prompt_path,
@@ -218,7 +225,7 @@ if __name__ == "__main__":
 
 		language_feedback = None
 		if language_check_mode == "llm":
-			checker_start_time = time.perf_counter()
+			# checker_start_time = time.perf_counter()
 			language_feedback = check_llm_language_issue(
 				checker_prompt_path,
 				last_question,        # Meest recente vraag van LLM
@@ -229,9 +236,9 @@ if __name__ == "__main__":
 				reasoning=checker_reasoning,
 				locatie=location,
 			)
-			print(f"[timing] Language checker took {time.perf_counter() - checker_start_time:.3f}s")
+			# print(f"[timing] Language checker took {time.perf_counter() - checker_start_time:.3f}s")
 		elif language_check_mode == "regels":
-			checker_start_time = time.perf_counter()
+			# checker_start_time = time.perf_counter()
 			manual_language_result = check_manual_language_issue(
 				user_text,
 				rules=manual_language_checks,
@@ -245,12 +252,11 @@ if __name__ == "__main__":
 						word_order_errors.append(user_text)
 					if "conjugation" in checks:
 						conjugation_errors.append(user_text)
-			print(f"[timing] Language checker took {time.perf_counter() - checker_start_time:.3f}s")
+			# print(f"[timing] Language checker took {time.perf_counter() - checker_start_time:.3f}s")
 
 		if language_feedback:
 			feedback_to_print = format_language_feedback(
 				language_feedback,
-				print_error_type,
 				manual_language_result.get("check") if language_check_mode == "regels" else None,
 			)
 			print(f"Taalfeedback: {feedback_to_print}")
@@ -258,7 +264,7 @@ if __name__ == "__main__":
 				tts.speak(feedback_to_print)
 			continue
 
-		reply_start_time = time.perf_counter()
+		# reply_start_time = time.perf_counter()
 		messages.append(HumanMessage(content=user_text))
 		reply = generate_reply(
 			level_prompt_path,
@@ -271,7 +277,7 @@ if __name__ == "__main__":
 			reasoning=conversation_reasoning,
 			locatie=location
 		)
-		print(f"[timing] Conversation model took {time.perf_counter() - reply_start_time:.3f}s")
+		# print(f"[timing] Conversation model took {time.perf_counter() - reply_start_time:.3f}s")
 
 		print(reply)
 		if output_format == "speech" and tts is not None:
