@@ -107,6 +107,7 @@ input_format: speech
 output_format: speech
 talking_head: makeittalk
 tts_engine: piper
+language_check_mode: regels
 language_check_rules: [woordvolgorde, vervoeging]
 correct_errors: True
 ```
