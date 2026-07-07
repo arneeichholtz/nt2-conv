@@ -22,11 +22,10 @@ A Dutch NT2 conversation assistant that provides interactive dialogue practice. 
 
 ## Features
 - **Input/Output Modes**: Text input or speech recognition via microphone and text responses or synthesized speech
-- **Language Checking**: Disable, enable rule-based checks (word order, conjugation), or use an LLM checker
+- **Language Checking**: Disable, enable rule-based checks (word order, conjugation), or use an LLM checker. With a qwen2.5 model, the LLM language check fails to work. With a newer model, for instance qwen3, the language check takes prohibtively long.
 - **Error Correction**: Optionally track and correct learner errors after conversation ends
 - **Available Conversation Themes**: kennismaken, winkelen, wonen
-- **Language Levels**: only A2 (for now)
-- **Model Flexibility**: Support for Ollama-based LLMs, Ollama-based language checker, and various TTS engines (Piper and gTTS)
+- **Model Flexibility**: Support for Ollama-based LLMs, Ollama-based language checker, and two TTS engines (Piper and gTTS)
 
 ## Setup
 1. Create and activate a virtual environment:
@@ -116,12 +115,13 @@ correct_errors: True
 
 ## Notes
 
-- **Microphone & PyAudio**: Speech input requires a working microphone and `pyaudio` support. If input fails, fall back to `text`.
-- **Piper Models**: TTS with Piper requires `.onnx` model and `.onnx.json` config files in the `voices/` directory. If files are missing, the system falls back to text output.
+- **Piper Models**: TTS with Piper requires `.onnx` model and `.onnx.json` config files in the `voices/` directory (see the README in the `voices` folder for instructions where to find these files). If files are missing, the system falls back to text output.
+- **Talking Head**: The `makeittalk` and `pytoon` animation backends require additional model files. Specifically, the `ckpt` folder is missing from /talking_head/examples/ where it should be placed. The checkpoint files were too large for GitHub, the folder should be pasted here in its entirety.
 - **Ollama**: The system expects Ollama to be running locally (default: `http://localhost:11434`). Install from [ollama.ai](https://ollama.ai).
 - **GPU Acceleration**: PyTorch and ASR will automatically use CUDA if available; otherwise, fall back to CPU.
 - **Error Tracking**: When `correct_errors` is enabled, word-order and conjugation mistakes are collected during conversation and shown at the end with LLM-generated corrections.
-- **Talking Head**: The `makeittalk` and `pytoon` backends require additional model files and may have longer initialization times.
+- **Microphone & PyAudio**: Speech input requires a working microphone and `pyaudio` support. If input fails, fall back to `text`.
+
 
 
 ## TODO

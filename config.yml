@@ -20,6 +20,6 @@ checker_temperature: 0
 checker_keep_alive: 3m 
 checker_reasoning: True
 
-piper_model_path: voices/nl_NL-alex-medium.onnx
-piper_config_path: voices/nl_NL-alex-medium.onnx.json
+piper_model_path: voices/nl_NL-ronnie-medium.onnx
+piper_config_path: voices/nl_NL-ronnie-medium.onnx.json
 tts_speaker_id: null    # Used in the case of multiple speakers.
