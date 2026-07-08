@@ -67,7 +67,7 @@ All settings are managed in `config.yml`. Below is a comprehensive guide to each
 - `piper_config_path` (string): Path to Piper `.onnx.json` config file (e.g., `voices/nl_NL-alex-medium.onnx.json`)
 - `tts_speaker_id` (integer or null): Speaker ID for multi-speaker Piper models (optional)
 
-### Talking Head (Avatar) -- only used when `output_format` is speech
+### Talking Head (Avatar) (only used when `output_format` is speech)
 - `talking_head` (string): Animated avatar backend – `uit`/`off`/`none` (disabled), `pytoon`, or `makeittalk`
 
 ### Language Checking
