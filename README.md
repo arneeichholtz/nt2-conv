@@ -4,9 +4,9 @@ A Dutch NT2 conversation assistant that provides interactive dialogue practice. 
 - **Automatic Speech Recognition (ASR)** – Transcribe spoken Dutch input using FasterWhisper
 - **Synthetic Conversations** - An LLM is prompted to perform a practice conversation with a student
 - **Text-to-Speech (TTS)** – Generate spoken replies with Piper or gTTS
-- **Language Checking** – Word-order and simple verb conjugation checks based on implemented rules or an LLM
+- **Language Checking** – Word-order and simple verb conjugation checks based on implemented rules or an LLM (language checks based on rules works partially and checks using LLM do not work)
 - **Talking Head** – Animated avatar to accompany spoken responses
-- **Error Correction** – Post-conversation analysis of language mistakes
+- **Error Correction** – Post-conversation analysis of language mistakes (works partially)
 
 ## Project Structure
 - `main.py`: Entry point for the interactive conversation loop
@@ -19,13 +19,6 @@ A Dutch NT2 conversation assistant that provides interactive dialogue practice. 
 - `asr.py`: Whisper-based automatic speech recognition
 - `text_to_speech.py`: TTS engine abstraction (Piper or gTTS)
 - `talking_head/`: Optional talking head animation system. This is the repository from Lou, some files are redundant.
-
-## Features
-- **Input/Output Modes**: Input can be text input or speech recognition via microphone; output can be text responses or synthesized speech
-- **Available Conversation Themes**: kennismaken, winkelen, wonen
-- **TTS**: Supports text-to-speech for the output. The ronnie or alex voice for Piper sound the best, alex talks a bit faster but has better intonation than ronnie.
-- **Language Checking**: Rule-based language checks (word order, conjugation), or checks using an LLM (does not work). Also track and correct learner errors after conversation ends
-- **Model Flexibility**: Support for Ollama-based LLMs, Ollama-based language checker, and two TTS engines (Piper and gTTS)
 
 ## Setup
 1. Create and activate a virtual environment:
@@ -46,7 +39,7 @@ A Dutch NT2 conversation assistant that provides interactive dialogue practice. 
 python main.py
 ```
 
-The system will start an interactive conversation. Exit by typing or speaking one of: `/quit`, `/exit`, `tot ziens`, `doei`, `stop`, `fijne dag`, `fijn weekend`, `bedankt`, `dankjewel`, or `dank je wel`.
+The system will start an interactive conversation. Exit by typing or speaking one of: `/quit`, `/exit`, `tot ziens`, `doei`, `stop`, `fijne dag`, `fijn weekend`, `bedankt`, `dankjewel`, `dank u wel`, or `dank je wel`.
 
 ---
 
@@ -96,10 +89,11 @@ Used only when `language_check_mode` is `llm`:
 conversation_model_name: qwen2.5:14b-instruct
 input_format: text
 output_format: text
+talking_head: uit
 language_check_mode: uit
 ```
 
-**Speech with talking head and piper TTS:**
+**Speech with talking headpiper TTS, rule-based language checks and correct errors:**
 ```yaml
 conversation_model_name: qwen2.5:14b-instruct
 input_format: speech
@@ -115,7 +109,7 @@ correct_errors: True
 
 ## Notes
 
-- **Piper Models**: TTS with Piper requires `.onnx` model and `.onnx.json` config files in the `voices/` directory (see the README in the `voices` folder for instructions where to find these files). If files are missing, the system falls back to text output.
+- **Piper Models**: TTS with Piper requires `.onnx` model and `.onnx.json` config files in the `voices/` directory (see the README in the `voices` folder for instructions where to find these files). If files are missing, the system falls back to text output. For the Piper TTS, the ronnie or alex voice sound best; alex talks faster but does not change its intonation at the end of an utterance like ronnie does.
 - **Talking Head**: The `makeittalk` and `pytoon` animation backends require additional model files. Specifically, the `ckpt` folder is missing from /talking_head/examples/ where it should be placed. The checkpoint files were too large for GitHub, the folder should be pasted here in its entirety.
 - **Language Checks**: If the language checks are enabled, the student must provide a correct sentence for the conversation to continue; otherwise, the sentence is just flagged as incorrect again.
 - **Ollama**: The system expects Ollama to be running locally (default: `http://localhost:11434`). Install from [ollama.ai](https://ollama.ai).
@@ -125,7 +119,7 @@ correct_errors: True
 
 ## TODO
 
-- Verb conjugation checks do not work very well. This can be improved, for instance by adding more irregular verbs to the checks.
+- The implementation of the verb conjugation does not work very well. The SpaCy dependency parser makes mistakes in the parsing, therefore the errors can also be incorrectly labeled. The Frog parser perhaps works better for Dutch. And more irregular verbs should also be added to the language checks. One can test how well the checks work for the simple utterances of the students, perhaps the simple sentences can be parsed well enough. But this implementation is not done yet.
 
 - Speech LLMs for speech evaluation, so to give feedback on different aspects of pronounciation. Would be cool to implement this.
 

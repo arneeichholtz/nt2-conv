@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import Optional
-from language_check_utils.shared import nlp
+from shared import nlp
 
 
 FIRST_PERSON = {"ik"}
@@ -188,7 +188,7 @@ def find_verb(subject):
 
 
 def has_correct_conjugation(subject, verb):
-	"""This function checks for: subject-verb number agreement + 2nd person singular -t rule."""
+	"""This function checks for: subject-verb number agreement + 2nd/3rd person singular -t rule."""
 	if not is_finite_verb(verb):
 		return True		# Assume correct conjugation if not finite (e.g., "er is zo veel te doen.")
 
@@ -224,12 +224,89 @@ def has_correct_conjugation(subject, verb):
 	if subject_text in SECOND_PERSON and subject.i > verb.i:
 		return not verb_text.endswith("t")
 
-	# Remaining cases pass after the checks above. Example: Ik woon.
+	# 1st person singular should NOT end with -t. Example: Ik werk.
+	if subject_text in FIRST_PERSON:
+		return not verb_text.endswith("t")
+
+	# 3rd person singular MUST end with -t. Example: Hij werkt.
+	if subject_text in THIRD_PERSON or determine_subject_person(subject) == 3:
+		return verb_text.endswith("t")
+
+	# Remaining cases pass after the checks above.
+	return True
+
+
+def could_be_verb(lemma: str, word: str) -> bool:
+	"""Check if a word could plausibly be a conjugated form of a verb lemma."""
+	lemma_lower = lemma.lower()
+	word_lower = word.lower()
+	
+	# Exact match or already recognized irregular
+	if lemma_lower in ONREGELMATIGE_PRESENTE_VORMEN:
+		return True
+	
+	# Common regular verb forms:
+	# - stem (1st person singular, infinitive): werk, hou, ga
+	# - stem+t (3rd person singular, 2nd person): werkt, houdt, gaat
+	# - stem+en (plural): werken, houden, gaan
+	if word_lower == lemma_lower:
+		return True
+	if word_lower == lemma_lower + "t":
+		return True
+	if word_lower == lemma_lower + "en":
+		return True
+	if lemma_lower.endswith("en") and word_lower == lemma_lower[:-2]:  # infinitive to stem
+		return True
+	
+	return False
+
+
+def check_misparsed_verb_conjugation(subject, verb_word: str, verb_lemma: str) -> bool:
+	"""Check conjugation for a word that may be misparsed as non-verb."""
+	subject_text = subject.text.lower()
+	verb_text = verb_word.lower()
+	lemma = verb_lemma.lower()
+	
+	# Try to reconstruct the infinitive form
+	# If the verb_text doesn't look like an infinitive, try adding -en
+	if not lemma.endswith("en"):
+		infinitive = lemma + "en"
+	else:
+		infinitive = lemma
+	
+	# Check irregular verbs using the reconstructed infinitive
+	if infinitive in ONREGELMATIGE_PRESENTE_VORMEN:
+		# Can't determine exact form for misparsed verbs, so check basic rules
+		if is_plural_subject(subject):
+			return verb_text in ONREGELMATIGE_PRESENTE_VORMEN[infinitive].get("plur", set())
+		return verb_text in ONREGELMATIGE_PRESENTE_VORMEN[infinitive].get("3sg", set()) or \
+		       verb_text in ONREGELMATIGE_PRESENTE_VORMEN[infinitive].get("1sg", set())
+	
+	# Regular verbs:
+	# Plural subject should have plural form (ends with -en)
+	if is_plural_subject(subject):
+		return verb_text.endswith("en")
+	
+	# Singular subject:
+	# 1st person: no -t (ik werk)
+	if subject_text in FIRST_PERSON:
+		return not verb_text.endswith("t")
+	
+	# 3rd person: must have -t (hij werkt)
+	if subject_text in THIRD_PERSON:
+		return verb_text.endswith("t")
+	
+	# 2nd person (rare in misparsed case, but handle it)
+	if subject_text in SECOND_PERSON:
+		return verb_text.endswith("t")
+	
 	return True
 
 
 def find_conjugation_issue(sentence: str) -> Optional[str]:
 	doc = nlp(sentence)
+	
+	# Primary check: find subjects and their verbs
 	for token in doc:
 		if not token.dep_.startswith("nsubj"):
 			continue
@@ -237,9 +314,16 @@ def find_conjugation_issue(sentence: str) -> Optional[str]:
 		subject = token
 		verb = find_verb(subject)
 		if verb is None:
+			# Fallback: check if the head (often misparsed as noun) could be a verb
+			potential_verb = subject.head
+			if potential_verb and potential_verb.pos_ in {"NOUN", "PROPN"} and potential_verb != subject:
+				# Check if this could be a misparsed verb
+				if could_be_verb(potential_verb.lemma_, potential_verb.text):
+					if not check_misparsed_verb_conjugation(subject, potential_verb.text, potential_verb.lemma_):
+						return "Deze zin bevat een fout in de werkwoordvervoeging, probeer het nog eens."
 			continue
 
-		if not has_correct_conjugation(subject, verb):
+		if verb and not has_correct_conjugation(subject, verb):
 			return "Deze zin bevat een fout in de werkwoordvervoeging, probeer het nog eens."
 
 	return None
@@ -249,10 +333,18 @@ if __name__ == "__main__":
 
 
 	examples = [
-		"Ik ben arne"
+		"Hij werkt als automonteur.",		# correct
+		"Wij werken als automonteurs.",		# correct
+		"Ik werk als automonteur.",			# correct
+		"Hij werk als automonteur.",		# incorrect
+		"Wij werk als automonteur.",		# incorrect
+		"Ik werken als automonteur.",		# incorrect
+		"Ik werkt als automonteur."			# incorrect
 	]
 
 	for example in examples:
 		result = find_conjugation_issue(example)
 		if result:
-			print(example, result)
+			print(f"✗ {example}")
+		else:
+			print(f"✓ {example}")

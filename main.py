@@ -217,7 +217,7 @@ if __name__ == "__main__":
 				continue
 
 		clean_text = user_text.lower().translate(str.maketrans("", "", string.punctuation)).strip()		# Remove punctuation and whitespace for comparison
-		if clean_text in {"/quit", "/exit", "tot ziens", "doei", "stop", "fijne dag", "fijn weekend", "bedankt", "dankjewel", "dank u wel", "dank je wel"}:
+		if clean_text in {"/quit", "/exit", "tot ziens", "doei", "stop", "fijne dag", "fijn weekend", "bedankt", "dankjewel", "dankuwel", "dank u wel", "dank je wel"}:
 			print("Gesprek gestopt.")
 			break
 
