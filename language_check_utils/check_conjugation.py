@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import Optional
-from shared import nlp
+from language_check_utils.shared import nlp
 
 
 FIRST_PERSON = {"ik"}

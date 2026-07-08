@@ -61,13 +61,13 @@ All settings are managed in `config.yml`. Below is a comprehensive guide to each
 - `input_format` (string): How user provides input – `text` (keyboard) or `speech` (microphone via ASR)
 - `output_format` (string): How system responds – `text` (printed) or `speech` (TTS + optional talking head)
 
-### Text-to-Speech (TTS)
+### Text-to-Speech (TTS) -- only used when `output_format` is speech
 - `tts_engine` (string): TTS backend – `piper` (Piper ONNX) or `gtts` (Google Text-to-Speech)
 - `piper_model_path` (string): Path to Piper `.onnx` model file (e.g., `voices/nl_NL-alex-medium.onnx`)
 - `piper_config_path` (string): Path to Piper `.onnx.json` config file (e.g., `voices/nl_NL-alex-medium.onnx.json`)
 - `tts_speaker_id` (integer or null): Speaker ID for multi-speaker Piper models (optional)
 
-### Talking Head (Avatar)
+### Talking Head (Avatar) -- only used when `output_format` is speech
 - `talking_head` (string): Animated avatar backend – `uit`/`off`/`none` (disabled), `pytoon`, or `makeittalk`
 
 ### Language Checking

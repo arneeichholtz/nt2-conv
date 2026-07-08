@@ -1,6 +1,6 @@
-conversation_model_name: qwen2.5:14b-instruct      # qwen2.5         # gemma4:e2b        
+conversation_model_name: qwen2.5:7b-instruct      # qwen2.5         # gemma4:e2b        
 conversation_temperature: 1
-conversation_theme: 3m
+conversation_keep_alive: 3m
 conversation_reasoning: True
 
 conversation_theme: kennismaken          # options: winkelen, kennismaken, wonen
@@ -8,11 +8,11 @@ language_level: A2
 input_format: speech                       # speech or text
 output_format: speech                      # speech or text
 
-talking_head: makeittalk                          # options: uit, pytoon, makeittalk
+talking_head: pytoon                          # options: uit, pytoon, makeittalk
 tts_engine: piper                           # options: piper, gtts
 
 language_check_mode: regels                    # options: uit, llm, regels
-language_check_rules: [woordvolgorde]          # options: woordvolgorde, vervoeging
+language_check_rules: [woordvolgorde, vervoeging]          # options: woordvolgorde, vervoeging
 correct_errors: True                           # True = ask the LLM to correct recorded word-order and conjugation mistakes after the conversation
 
 checker_model_name: qwen2.5:7b-instruct           # used when language_check_mode is llm

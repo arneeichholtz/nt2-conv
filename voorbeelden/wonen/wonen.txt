@@ -32,28 +32,28 @@ Theo: Ja, in de zomer elke dag en ik werk vaak in de tuin.
 Willem: Goed om te horen, Theo. Tot ziens!
 
 VOORBEELD 3
-Willem: Hoi! Hoe heet jij?
-Theo: Ik ben Theo.
-Willem: Waar woon jij Theo?
-Theo: Ik woon nu in Amsterdam.
-Willem: Amsterdam is heel druk en gezellig! Woon je daar alleen?
-Theo: Nee, ik woon in een studentenhuis met vier vrienden.
-Willem: Vind je het leuk om daar te wonen?
-Theo: Het is erg gezellig, maar het is vaak wel vies.
-Willem: Leuk om te horen. Dat hoort bij een studentenwoning. Kan je daar nog lang blijven?
-Theo: Ja, mijn hele studietijd.
-Willem: Wat goed! Tot ziens, Theo.
-Theo: Tot ziens.
+Mila: Hoi! Hoe heet jij?
+Anne: Ik ben Anne
+Mila: Waar woon jij Anne?
+Anne: Ik woon nu in Amsterdam.
+Mila: Amsterdam is heel druk en gezellig! Woon je daar alleen?
+Anne: Nee, ik woon in een studentenhuis met vier vrienden.
+Mila: Vind je het leuk om daar te wonen?
+Anne: Het is erg gezellig, maar het is vaak wel vies.
+Mila: Leuk om te horen. Dat hoort bij een studentenwoning. Kan je daar nog lang blijven?
+Anne: Ja, mijn hele studietijd.
+Mila: Wat goed! Tot ziens, Theo.
+Anne: Tot ziens.
 
 VOORBEELD 4
-Willem: Hoi! Ben je blij met je huis?
-Theo: Ja zeker, het is een modern huis met veel grote ramen.
-Willem: Wat fijn. Heb je ook een tuin bij het huis?
-Theo: Nee, ik heb geen tuin, maar wel een heel groot balkon.
-Willem: O, een balkon is ook super! En heb je een grote keuken?
-Theo: Ja, de keuken is heel ruim, en ik hou erg van koken.
-Willem: Goed om te horen. Tot ziens.
-Theo: Tot ziens.
+Mila: Hoi! Ben je blij met je huis?
+Anne: Ja zeker, het is een modern huis met veel grote ramen.
+Mila: Wat fijn. Heb je ook een tuin bij het huis?
+Anne: Nee, ik heb geen tuin, maar wel een heel groot balkon.
+Mila: O, een balkon is ook super! En heb je een grote keuken?
+Anne: Ja, de keuken is heel ruim, en ik hou erg van koken.
+Mila: Goed om te horen. Tot ziens.
+Anne: Tot ziens.
 
 VOORBEELD 5
 Willem: Hallo! Waar woon jij?
@@ -70,15 +70,15 @@ Willem: Wat fijn. Tot ziens!
 Theo: Tot ziens.
 
 VOORBEELD 6
-Willem: Hoi! Woon je in een groot of in een klein huis?
-Theo: Ik woon in een klein appartement, maar ik vind mijn huis erg fijn.
-Willem: Heb je wel een aparte slaapkamer, of is alles in één ruimte?
-Theo: Ik heb gelukkig wel een aparte slaapkamer en een kleine badkamer.
-Willem: Dat is prettig. Met wie woon je daar?
-Theo: Ik woon daar met mijn vriend.
-Willem: En hoe lang wonen jullie daar al?
-Theo: Pas net, nu drie maanden.
-Willem: En bevalt het daar?
-Theo: Ja, het is rustig en niet ver van het centrum.
-Willem: Goed om te horen. Leuk om met je te spreken!
-Theo: Tot ziens.
+Arne: Hoi! Woon je in een groot of in een klein huis?
+Jutte: Ik woon in een klein appartement, maar ik vind mijn huis erg fijn.
+Arne: Heb je wel een aparte slaapkamer, of is alles in één ruimte?
+Jutte: Ik heb gelukkig wel een aparte slaapkamer en een kleine badkamer.
+Arne: Dat is prettig. Met wie woon je daar?
+Jutte: Ik woon daar met mijn vriend.
+Arne: En hoe lang wonen jullie daar al?
+Jutte: Pas net, nu drie maanden.
+Arne: En bevalt het daar?
+Jutte: Ja, het is rustig en niet ver van het centrum.
+Arne: Goed om te horen. Leuk om met je te spreken!
+Jutte: Tot ziens.
