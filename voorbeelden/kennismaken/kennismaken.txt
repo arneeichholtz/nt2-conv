@@ -2,12 +2,12 @@ VOORBEELD 1
 Anne: Hoi! Hoe heet jij?
 Mila: Hoi, ik heet Mila.
 Anne: Waar woon jij?
-Mila: Ik woon in Utrecht.
-Anne: Wat leuk. Ik woon in Amsterdam.
+Mila: Ik woon in Utrecht, en jij?
+Anne: Ik woon in Amsterdam.
 Mila: Ik ben nog nooit in Amsterdam geweest.
 Anne: En wat doe je in Utrecht?
 Mila: Ik werk daar bij een bank. En jij? Wat doe jij in Amsterdam.
-Anne: Ik studeer rechten aan de universiteit van Amsterdam. Jij komt niet uit Nederland, toch?
+Anne: Ik studeer rechten aan de universiteit van Amsterdam. Kom jij uit Nederland?
 Mila: Nee, ik kom uit Egypte. Ik woon nu drie jaar in Nederland, mijn vriend is Nederlander.
 Anne: Je spreekt al goed Nederlands, zeg!
 Mila: Dank je!
@@ -34,7 +34,7 @@ Mila: Ik ben in Rotterdam bezig met mijn studie, ik studeer economie aan de Eras
 Anne: Ik werk in Eindhoven in de supermarkt. Kom jij uit Nederland?
 Mila: Nee, ik kom uit Marokko maar ik woon nu al zeven jaar in Nederland.
 Anne: Het is leuk om je te ontmoeten Mila!
-Mila: Dat vind ik ook!
+Mila: Dat vind ik ook.
 
 VOORBEELD 4
 Willem: Hoi, wat is jouw naam?
@@ -43,10 +43,10 @@ Willem: Wat ga je dit weekend doen, Theo?
 Theo: Ik ga dit weekend wandelen. 
 Willem: Met wie ga je wandelen?
 Theo: Met mijn ouders.
-Willem. Wat leuk! Waar gaan jullie wandelen?
+Willem. En waar gaan jullie wandelen?
 Theo: In het bos bij Haarlem, richting het strand.
 Willem: Veel plezier!
-Theo: Dank je!
+Theo: Dank je.
 
 VOORBEELD 5
 Willem: Hoi, wat is jouw naam?

@@ -1,19 +1,19 @@
 conversation_model_name: qwen2.5:7b-instruct      # qwen2.5         # gemma4:e2b        
-conversation_temperature: 1
+conversation_temperature: 0.8
 conversation_keep_alive: 3m
 conversation_reasoning: True
 
-conversation_theme: kennismaken          # options: winkelen, kennismaken, wonen
+conversation_theme: wonen          # options: winkelen, kennismaken, wonen
 language_level: A2
 input_format: speech                       # speech or text
 output_format: speech                      # speech or text
 
-talking_head: pytoon                          # options: uit, pytoon, makeittalk
-tts_engine: piper                           # options: piper, gtts
+talking_head: makeittalk                         # options: uit, pytoon, makeittalk
+tts_engine: piper                           # options: piper, gtts 
 
-language_check_mode: regels                    # options: uit, llm, regels
-language_check_rules: [woordvolgorde, vervoeging]          # options: woordvolgorde, vervoeging
-correct_errors: True                           # True = ask the LLM to correct recorded word-order and conjugation mistakes after the conversation
+language_check_mode: uit             # options: uit, llm, regels
+language_check_rules: [woordvolgorde]          # options: woordvolgorde, vervoeging
+correct_errors: False                           # True = ask the LLM to correct recorded word-order and conjugation mistakes after the conversation
 
 checker_model_name: qwen2.5:7b-instruct           # used when language_check_mode is llm
 checker_temperature: 0

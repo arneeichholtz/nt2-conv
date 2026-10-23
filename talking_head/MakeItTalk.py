@@ -76,7 +76,7 @@ def make16kHz(wavfile):
     numsamples16k = int(np.round(numsamplesIn*16000/sf))
     newdata = resample(data, numsamples16k)
     writewav('examples/tts.wav', 16000, newdata.astype(np.int16))
-    print(numsamplesIn, numsamples16k)
+    # print(numsamplesIn, numsamples16k)
 
 def speak(prompt):
     with wave.open('tts.wav', 'wb') as wav_file:
@@ -111,66 +111,59 @@ def move_figure(f, x, y):
         window.move(x, y)
 
 
-def playVideo(videofile, baseImage):
+'''
+Display settings for the talking head window.
 
-    blank = np.ones((baseImage.shape[0], baseImage.shape[1], baseImage.shape[2]), dtype='uint8') * 255
-    px = 0.5/plt.rcParams['figure.dpi']  # pixel in inches
-    width, heigth = (baseImage.shape[0]*px, baseImage.shape[1]*px)
-    with plt.rc_context({'toolbar': 'None'}):
-        f = plt.figure(figsize=(width, heigth))
-        move_figure(f, 250, 250)
-        plt.xticks([])
-        plt.yticks([])
-        plt.imshow(blank)
-        plt.axis('off')
-        plt.show(block=False)
-        plt.pause(0.1)
-    
-    xxx = [
-        'ffplay',
-        '-hide_banner',
-        '-noborder',
-        '-autoexit',
-        '-loglevel',
-        'panic',
-        '-x',
-        '480',
-        '-y',
-        '540',
-        '-left',
-        '474',
-        '-top',
-        '518',
-        videofile
-        ]
-
-    code = sp.run(xxx)
-    plt.close(f)
-
-    with plt.rc_context({'toolbar': 'None'}):
-        f = plt.figure(figsize=(width, heigth))
-        move_figure(f, 250, 250)
-        plt.xticks([])
-        plt.yticks([])
-        plt.imshow(baseImage)
-        plt.axis('off')
-        plt.show(block=False)
-        plt.pause(0.1)
-
-    return code
+The video (ffplay) is placed exactly over the still image, so only these
+values need to be changed to resize or move the head on the screen.
+'''
+DISPLAY_SCALE = 3.0                  # size of the head: 2.0 is the original size, 3.0 is 1.5x larger, etc.
+DISPLAY_X, DISPLAY_Y = 200, 200      # screen position of the upper left corner of the window
+VIDEO_OFFSET_X, VIDEO_OFFSET_Y = 0, 0  # fine-tune the video position (pixels) if it does not overlap the image exactly
 
 '''
-Default hyper-parameters for the model.
-
-Basic setup for animation.
+Default parameters for the model and animation
 '''
-default_head_name = 'CatiaToon'           # the image name (with no .jpg) to animate
+default_head_name = 'cartoonboy'  # 'johnhead' 'CatiaToon'         # the image name (with no .jpg) to animate
 ADD_NAIVE_EYE = True                 # whether add naive eye blink
 CLOSE_INPUT_FACE_MOUTH = False       # if your image has an opened mouth, put this as True, else False
 AMP_LIP_SHAPE_X = 2.                 # amplify the lip motion in horizontal direction
 AMP_LIP_SHAPE_Y = 2.                 # amplify the lip motion in vertical direction
 AMP_HEAD_POSE_MOTION = 0.7           # amplify the head pose motion (usually smaller than 1.0, put it to 0. for a static head pose)
 load_AUTOVC_name = 'examples/ckpt/ckpt_autovc.pth'
+
+
+def image_screen_rect(f, im):
+    """Return the screen rectangle (left, top, width, height) in pixels of image im in figure f."""
+    if not hasattr(f.canvas, 'get_tk_widget'):
+        # not a Tk window: fall back to the values that were tuned for DISPLAY_SCALE = 2.0
+        size = int(round(590 * DISPLAY_SCALE / 2.0))
+        return 400, 435, size, size
+    widget = f.canvas.get_tk_widget()
+    widget.update_idletasks()
+    bbox = im.get_window_extent()    # pixels inside the canvas, origin at the bottom left
+    # round the edges (not the size) so the video covers every partially drawn pixel row/column
+    left = widget.winfo_rootx() + int(np.floor(bbox.x0))
+    right = widget.winfo_rootx() + int(np.ceil(bbox.x1))
+    top = widget.winfo_rooty() + int(np.floor(f.bbox.height - bbox.y1))
+    bottom = widget.winfo_rooty() + int(np.ceil(f.bbox.height - bbox.y0))
+    return left, top, right - left, bottom - top
+
+
+def show_image(baseImage):
+    """Show the still image and return the figure and the screen rectangle of the image."""
+    px = DISPLAY_SCALE/plt.rcParams['figure.dpi']  # pixel in inches
+    width, heigth = (baseImage.shape[1]*px, baseImage.shape[0]*px)
+    with plt.rc_context({'toolbar': 'None'}):
+        f = plt.figure(figsize=(width, heigth))
+        move_figure(f, DISPLAY_X, DISPLAY_Y)
+        plt.xticks([])
+        plt.yticks([])
+        im = plt.imshow(baseImage[:, :, ::-1])
+        plt.axis('off')
+        plt.show(block=False)
+        plt.pause(0.1)
+    return f, image_screen_rect(f, im)
 
 
 def match_target_amplitude(sound, target_dBFS):
@@ -253,19 +246,8 @@ class AutoVC_mel_Convertor():
 
 def playVideo(videofile, baseImage):
 
-    blank = np.ones((baseImage.shape[0], baseImage.shape[1], baseImage.shape[2]), dtype='uint8') * 128
-    px = 2.0/plt.rcParams['figure.dpi']  # pixel in inches
-    width, heigth = (baseImage.shape[0]*px, baseImage.shape[1]*px)
-    with plt.rc_context({'toolbar': 'None'}):
-        f = plt.figure(figsize=(width, heigth))
-        move_figure(f, 200, 200)
-        plt.xticks([])
-        plt.yticks([])
-        plt.imshow(baseImage[:, :, ::-1])
-        plt.axis('off')
-        plt.show(block=False)
-        plt.pause(0.1)
-    
+    f, (left, top, width, height) = show_image(baseImage)
+
     xxx = [
         'ffplay',
         '-hide_banner',
@@ -274,33 +256,24 @@ def playVideo(videofile, baseImage):
         '-loglevel',
         'panic',
         '-x',       # display width
-        '590',
+        str(width),
         '-y',
-        '590',      # display height
+        str(height),      # display height
         '-left',
-        '400',
+        str(left + VIDEO_OFFSET_X),
         '-top',
-        '435',
+        str(top + VIDEO_OFFSET_Y),
         videofile
         ]
 
     code = sp.run(xxx)
 
+    show_image(baseImage)
 
-    with plt.rc_context({'toolbar': 'None'}):
-        f = plt.figure(figsize=(width, heigth))
-        move_figure(f, 200, 200)
-        plt.xticks([])
-        plt.yticks([])
-        plt.imshow(baseImage[:, :, ::-1])
-        plt.axis('off')
-        plt.show(block=False)
-        plt.pause(0.1)
+    # keep only the most recent figure
+    for fignum in plt.get_fignums()[:-1]:
+        plt.close(fignum)
 
-    figs = plt.get_fignums()
-    if len(figs) > 1:
-        plt.close(figs[0])
-    
     return code
 
 def mp3TOwav(inputfile, outputfile):
@@ -351,28 +324,20 @@ class MakeItTalk:
         self.headname = headname
         
         self.img = cv2.imread('examples/' + headname + '.jpg')
+        # the image translation network only works on 256x256 images
+        if self.img.shape[:2] != (256, 256):
+            sys.exit('examples/' + headname + '.jpg is ' + str(self.img.shape[1]) + 'x' + str(self.img.shape[0]) +
+                     ', it must be 256x256 (crop/resize it and rescale the -scale_shift.txt accordingly)')
 ##
 # Initialize image display
 ##
-        baseImage = self.img
-        blank = np.ones((baseImage.shape[0], baseImage.shape[1], baseImage.shape[2]), dtype='uint8') * 128
-        px = 2.0/plt.rcParams['figure.dpi']  # pixel in inches
-        width, heigth = (baseImage.shape[0]*px, baseImage.shape[1]*px)
-        with plt.rc_context({'toolbar': 'None'}):
-            f = plt.figure(figsize=(width, heigth))
-            move_figure(f, 200, 200)
-            plt.xticks([])
-            plt.yticks([])
-            plt.imshow(baseImage[:, :, ::-1])
-            plt.axis('off')
-            plt.show(block=False)
-            plt.pause(0.1)
+        show_image(self.img)
 
         allexamples = os.listdir('examples/shapefiles')
         found = False
         search = headname.replace('Toon', '').replace('Flat', '')
         for name in allexamples:
-            if search in name and not 'shift' in name:
+            if search in name and name.endswith('.txt') and not 'shift' in name:
                 headfile = name
                 found = True
                 break 
@@ -415,8 +380,8 @@ class MakeItTalk:
             shape_3d, scale, shift = util.norm_input_face(shape_3d)
 
             os.makedirs('examples/shapefiles/', exist_ok=True)
-            np.savetxt('examples/shapefiles/' + opt_parser.jpg.replace('jpg', 'txt'), shape_3d)
-            fout = open('examples/shapefiles/' + opt_parser.jpg.replace('.jpg', '-scale_shift.txt'), 'w')
+            np.savetxt('examples/shapefiles/' + headname + '.txt', shape_3d)
+            fout = open('examples/shapefiles/' + headname + '-scale_shift.txt', 'w')
             fout.write(str(scale) + ',' + str(shift[0]) + ',' + str(shift[1]))
             fout.close()
             
@@ -551,6 +516,7 @@ if __name__ == "__main__":
     
     prompts = ['Welkom. Ik ben vandaag jouw gastvrouw.', 'Wat kan ik voor je doen?', 
                 'De soep van de dag is vandaag tomatensoep.']
+    
     for prompt in prompts:
         talkingHead_gtts(prompt)
 

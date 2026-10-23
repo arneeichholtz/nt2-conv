@@ -12,7 +12,7 @@ Theo: We wonen daar nu drie jaar samen.
 Willem: Wat fijn. Vind je het leuk om in Utrecht te wonen?
 Theo: Ja zeker, het is een fijne plek.
 Willem: Goed om te horen. Tot ziens, Theo!
-Theo: Tot ziens.
+Theo: Tot ziens!
 
 VOORBEELD 2
 Willem: Hallo! In welke stad of welk dorp woon jij?
@@ -40,7 +40,7 @@ Mila: Amsterdam is heel druk en gezellig! Woon je daar alleen?
 Anne: Nee, ik woon in een studentenhuis met vier vrienden.
 Mila: Vind je het leuk om daar te wonen?
 Anne: Het is erg gezellig, maar het is vaak wel vies.
-Mila: Leuk om te horen. Dat hoort bij een studentenwoning. Kan je daar nog lang blijven?
+Mila: Leuk om te horen. Dat hoort bij een studentenwoning. Kan je daar nog lang blijven wonen?
 Anne: Ja, mijn hele studietijd.
 Mila: Wat goed! Tot ziens, Theo.
 Anne: Tot ziens.
@@ -81,4 +81,4 @@ Jutte: Pas net, nu drie maanden.
 Arne: En bevalt het daar?
 Jutte: Ja, het is rustig en niet ver van het centrum.
 Arne: Goed om te horen. Leuk om met je te spreken!
-Jutte: Tot ziens.
+Jutte: Tot ziens!
