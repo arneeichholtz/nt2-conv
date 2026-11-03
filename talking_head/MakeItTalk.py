@@ -6,14 +6,13 @@ import subprocess as sp
 sys.path.append("thirdparty/AdaptiveWingLoss")
 sys.path.append("thirdparty/resemblyer_util")
 sys.path.append('../')
-
 import glob
 import cv2
 import matplotlib 
 import matplotlib.pyplot as plt
 import face_alignment
 
-from src.approaches.image_translation import Image_translation_block
+from image_translation import Image_translation_block
 import torch
 import pickle
 import shutil
@@ -33,10 +32,6 @@ from pydub import AudioSegment
 from math import ceil
 
 import yaml
-###
-# The chdir command is not necessary if the module is imported by the main script.
-#
-# os.chdir('c:/Users/LouBo/Arne')
 
 import gtts
 import yaml 
@@ -46,10 +41,6 @@ from piper import PiperVoice, SynthesisConfig
 from scipy.signal import resample
 from scipy.io.wavfile import read as readwav
 from scipy.io.wavfile import write as writewav
-#
-# The chdir command is redundant if the module is imported by the main script.
-#
-# os.chdir('c:/Users/LouBo/Arne')
 
 def load_config(path: Path) -> dict:
     if not path.exists():
@@ -57,10 +48,21 @@ def load_config(path: Path) -> dict:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     return data or {}
 
-root = Path(__file__).resolve().parent
-config = load_config(root.parent / "config.yml")
+# config.yml and the voice paths in it live in the project root (one level up)
+root = Path(__file__).resolve().parent.parent
+config = load_config(root / "config.yml")
 model_path = config.get("piper_model_path", config.get("tts_model_path"))
 config_path = config.get("piper_config_path", config.get("tts_config_path"))
+
+if not model_path or not config_path:
+    raise FileNotFoundError(f"piper_model_path / piper_config_path missing in {root / 'config.yml'}")
+model_path = Path(model_path)
+config_path = Path(config_path)
+if not model_path.is_absolute():
+    model_path = root / model_path
+if not config_path.is_absolute():
+    config_path = root / config_path
+
 ###
 # Define a PIPER voice.
 ###
@@ -76,7 +78,6 @@ def make16kHz(wavfile):
     numsamples16k = int(np.round(numsamplesIn*16000/sf))
     newdata = resample(data, numsamples16k)
     writewav('examples/tts.wav', 16000, newdata.astype(np.int16))
-    # print(numsamplesIn, numsamples16k)
 
 def speak(prompt):
     with wave.open('tts.wav', 'wb') as wav_file:
@@ -122,9 +123,11 @@ DISPLAY_X, DISPLAY_Y = 200, 200      # screen position of the upper left corner 
 VIDEO_OFFSET_X, VIDEO_OFFSET_Y = 0, 0  # fine-tune the video position (pixels) if it does not overlap the image exactly
 
 '''
-Default parameters for the model and animation
+Default hyper-parameters for the model.
+
+Basic setup for animation.
 '''
-default_head_name = 'cartoonboy'  # 'johnhead' 'CatiaToon'         # the image name (with no .jpg) to animate
+default_head_name = 'cartoonboy'           # the image name (with no .jpg) to animate
 ADD_NAIVE_EYE = True                 # whether add naive eye blink
 CLOSE_INPUT_FACE_MOUTH = False       # if your image has an opened mouth, put this as True, else False
 AMP_LIP_SHAPE_X = 2.                 # amplify the lip motion in horizontal direction
@@ -173,7 +176,7 @@ def match_target_amplitude(sound, target_dBFS):
 class AutoVC_mel_Convertor():
     
 
-    def __init__(self, src_dir, proportion=(0., 1.), seed=0):
+    def __init__(self, src_dir, autovc_model_path, proportion=(0., 1.), seed=0):
 
         self.src_dir = src_dir
         if(not os.path.exists(os.path.join(src_dir, 'filename_index.txt'))):
@@ -183,23 +186,27 @@ class AutoVC_mel_Convertor():
                 lines = f.readlines()
                 self.filenames = [(int(line.split(' ')[0]), line.split(' ')[1][:-1]) for line in lines]
 
-    def convert_single_wav_to_autovc_input(self, audio_filename, autovc_model_path):
+        # load the AutoVC model once, it is reused for every sentence
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.G = Generator(16, 256, 512, 16).eval().to(self.device)
+
+        g_checkpoint = torch.load(autovc_model_path, map_location=self.device)
+        self.G.load_state_dict(g_checkpoint['model'])
+
+        embed = np.loadtxt('src/autovc/retrain_version/obama_emb.txt')
+        self.emb_trg = torch.from_numpy(embed[np.newaxis, :].astype('float32')).to(self.device)
+
+    def convert_single_wav_to_autovc_input(self, audio_filename):
 
         def pad_seq(x, base=32):
             len_out = int(base * ceil(float(x.shape[0]) / base))
             len_pad = len_out - x.shape[0]
             assert len_pad >= 0
             return np.pad(x, ((0, len_pad), (0, 0)), 'constant'), len_pad
-        t0 = int(time.time()) * 1000
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        G = Generator(16, 256, 512, 16).eval().to(device)
+        device = self.device
+        G = self.G
+        emb_trg = self.emb_trg
 
-        g_checkpoint = torch.load(autovc_model_path, map_location=device)
-        G.load_state_dict(g_checkpoint['model'])
-
-        emb = np.loadtxt('src/autovc/retrain_version/obama_emb.txt')
-        emb_trg = torch.from_numpy(emb[np.newaxis, :].astype('float32')).to(device)
-        t1 = int(time.time()) * 1000
         aus = []
         audio_file = audio_filename
 
@@ -210,8 +217,10 @@ class AutoVC_mel_Convertor():
         x_real_src, f0_norm, melspectrum = extract_f0_func_audiofile(audio_file, 'F')
 
         f0_org_src = quantize_f0_interp(f0_norm)
-        
+        time_0 = timeit.default_timer()
         emb, _ = get_spk_emb(audio_file)
+        time_1 = timeit.default_timer()
+        # print('time in get_spk_emb in converrt_single_wav', time_1 - time_0)
 
 
         l = x_real_src.shape[0]
@@ -296,8 +305,6 @@ def mp3TOwav(inputfile, outputfile):
 
     code = sp.run(extractaudio)
 
-        
-
 
 '''
 Step 2: load the image and detect its landmark
@@ -322,29 +329,17 @@ class MakeItTalk:
                  headname,
                  ):
         self.headname = headname
-        
-        self.img = cv2.imread('examples/' + headname + '.jpg')
-        # the image translation network only works on 256x256 images
-        if self.img.shape[:2] != (256, 256):
-            sys.exit('examples/' + headname + '.jpg is ' + str(self.img.shape[1]) + 'x' + str(self.img.shape[0]) +
-                     ', it must be 256x256 (crop/resize it and rescale the -scale_shift.txt accordingly)')
-##
-# Initialize image display
-##
+        self.img = plt.imread('examples/' + headname + '.jpg')[:, :, ::-1]
         show_image(self.img)
 
         allexamples = os.listdir('examples/shapefiles')
         found = False
         search = headname.replace('Toon', '').replace('Flat', '')
         for name in allexamples:
-            if search in name and name.endswith('.txt') and not 'shift' in name:
+            if search in name and not 'shift' in name:
                 headfile = name
                 found = True
                 break 
-        if found:
-            print('headfile, name', headfile, name)
-        else:
-            print('not found')
 
 
         if found:
@@ -380,46 +375,38 @@ class MakeItTalk:
             shape_3d, scale, shift = util.norm_input_face(shape_3d)
 
             os.makedirs('examples/shapefiles/', exist_ok=True)
-            np.savetxt('examples/shapefiles/' + headname + '.txt', shape_3d)
-            fout = open('examples/shapefiles/' + headname + '-scale_shift.txt', 'w')
+            np.savetxt('examples/shapefiles/' + opt_parser.jpg.replace('jpg', 'txt'), shape_3d)
+            fout = open('examples/shapefiles/' + opt_parser.jpg.replace('.jpg', '-scale_shift.txt'), 'w')
             fout.write(str(scale) + ',' + str(shift[0]) + ',' + str(shift[1]))
             fout.close()
             
         self.shape_3d = shape_3d
-        self.shift = shift 
+        self.shift = shift
         self.scale = scale
 
-    def generate_prompt_gtts(self, prompt):
-        tts = gtts.gTTS(prompt, lang='nl')
-        tts.save('tts.mp3')
-        mp3TOwav('tts.mp3', 'examples/tts.wav')
+        # load all models once; talking_head() reuses them for every sentence
+        self.autovc = AutoVC_mel_Convertor('examples', autovc_model_path=load_AUTOVC_name)
+        self.audio2landmark = Audio2landmark_model(jpg_shape=self.shape_3d)
+        self.image_translation = Image_translation_block(single_test=True)
+
 
     def talking_head(self):    
-        
-        au_data = []
-        au_emb = []
-
 
         ain = 'examples/tts.wav'
         wavname = 'tts.wav'
-
+        
+        time_00 = timeit.default_timer()
         au_data = []
         au_emb = []
 
-        wavname = 'tts.wav'
-
-        time_00 = int(time.time()) * 1000
         me, ae = get_spk_emb('examples/' + wavname)
         au_emb.append(me.reshape(-1))
-        time_01 = int(time.time()) * 1000
 
-        c = AutoVC_mel_Convertor('examples')
-
-        au_data_i = c.convert_single_wav_to_autovc_input(audio_filename='examples/' + wavname,
-               autovc_model_path=load_AUTOVC_name)
+        au_data_i = self.autovc.convert_single_wav_to_autovc_input(audio_filename='examples/' + wavname)
         au_data += au_data_i
 
-        time_1 = int(time.time()) * 1000
+        time_01 = timeit.default_timer()
+        # print('time in AutoVC_mel', time_01 - time_00)
         ###################################
         # landmark fake placeholder
         fl_data = []
@@ -448,7 +435,8 @@ class MakeItTalk:
         with open(os.path.join('examples', 'dump', 'random_val_gaze.pickle'), 'wb') as fp:
             gaze = {'rot_trans':rot_tran, 'rot_quat':rot_quat, 'anchor_t_shape':anchor_t_shape}
             pickle.dump(gaze, fp)
-        time_2 = int(time.time()) * 1000
+        time_02 = timeit.default_timer()
+        # print('time in step 3', time_02 - time_01)
 
         '''
         Step 4: Audio-to-Landmarks prediction
@@ -465,38 +453,36 @@ class MakeItTalk:
         A substantial part of the processing in done by util/vis.py, where the 
         use of ffmpeg has been rewritten to avoid lots of uninformative screen output.
         '''
+        time_03 = timeit.default_timer()
+        self.audio2landmark.test(au_emb=au_emb)
+        time_04 = timeit.default_timer()
+        # print('time in Audio2Landmark', time_04 - time_03)
+        
+        fls = 'examples/pred_fls_tts_audio_embed.txt'
 
-        model = Audio2landmark_model(jpg_shape=self.shape_3d)
+        fl = np.loadtxt(fls).reshape((-1, 68,3))
+        fl[:, :, 0:2] = -fl[:, :, 0:2]
+        fl[:, :, 0:2] = fl[:, :, 0:2] / self.scale - self.shift
+        if (ADD_NAIVE_EYE) and fl.shape[0] > 47:
+            fl = util.add_naive_eye(fl)
 
-        model.test(au_emb=au_emb)
+        # # additional smooth
+        # np.save('fl_before_filter.npy', fl)
+        # fl = fl.reshape((-1, 204))
+        # np.save('fl_reshaped_before.npy', fl)
+        # fl[:, :48*3] = savgol_filter(fl[:, :48*3], 15, 3, axis=0)
+        # fl[:, 48*3:] = savgol_filter(fl[:, 48*3:], 5, 3, axis=0)
+        # np.save('fl_reshaped_after.npy', fl)
+        # fl = fl.reshape((-1, 68, 3))
+        # np.save('fl_after_filter.npy', fl)
 
-        fls = glob.glob('examples/*.txt')
-        fls.sort()
+        ''' STEP 6: Imag2image translation '''
+        with torch.no_grad():
+            self.image_translation.single_test(jpg=self.img, fls=fl)
 
-
-        for i in range(0,len(fls)):
-        #for i in range(1):
-            fl = np.loadtxt(fls[i]).reshape((-1, 68,3))
-            fl[:, :, 0:2] = -fl[:, :, 0:2]
-            fl[:, :, 0:2] = fl[:, :, 0:2] / self.scale - self.shift
-            if (ADD_NAIVE_EYE) and fl.shape[0] > 47:
-                fl = util.add_naive_eye(fl)
-
-            # additional smooth
-            fl = fl.reshape((-1, 204))
-            fl[:, :48 * 3] = savgol_filter(fl[:, :48 * 3], 15, 3, axis=0)
-            fl[:, 48*3:] = savgol_filter(fl[:, 48*3:], 5, 3, axis=0)
-            fl = fl.reshape((-1, 68, 3))
-
-            ''' STEP 6: Imag2image translation '''
-            model = Image_translation_block(single_test=True)
-            with torch.no_grad():
-                model.single_test(jpg=self.img, fls=fl, filename=fls[i], \
-                                  prefix=self.headname)
-
-            time_4 = int(time.time()) * 1000
-            videofile = fls[i].replace('pred_fls', self.headname).replace('txt', 'mp4')
-            result = playVideo(videofile, self.img)
+        time_05 = timeit.default_timer()
+        # print('time in step 6', time_05 - time_04)
+        return_code = playVideo('tts.mp4', self.img)
 
 talkingHead = MakeItTalk(default_head_name)
 
@@ -510,14 +496,12 @@ def talkingHead_gtts(prompt):
 def talkingHead_piper(prompt):
     speak(prompt)
     talkingHead.talking_head()
-    time4 = timeit.default_timer()
 
 if __name__ == "__main__":
     
-    prompts = ['Welkom. Ik ben vandaag jouw gastvrouw.', 'Wat kan ik voor je doen?', 
+    prompts = ['Welkom. Ik ben vandaag jouw gastheer.', 'Wat kan ik voor je doen?', 
                 'De soep van de dag is vandaag tomatensoep.']
-    
     for prompt in prompts:
-        talkingHead_gtts(prompt)
+        talkingHead_piper(prompt)
 
     sys.exit('success')

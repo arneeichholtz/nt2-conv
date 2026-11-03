@@ -3,7 +3,6 @@ import string
 import time
 import yaml
 import random
-from asr import WhisperASR
 from langchain_core.messages import AIMessage, HumanMessage
 
 from generate import create_chain, generate_reply, start_conversation
@@ -11,7 +10,8 @@ from language_check import check_llm_language_issue, check_manual_language_issue
 from talking_head import create_talking_head_renderer
 from text_to_speech import create_text_to_speech
 import torch
-
+import sys
+import os
 
 DEFAULT_LANGUAGE_ERROR_MESSAGE = "De woordvolgorde is niet helemaal correct, probeer het nog eens."
 DEFAULT_CONJUGATION_ERROR_MESSAGE = "De werkwoordvervoeging is niet helemaal correct, probeer het nog eens."
@@ -40,11 +40,9 @@ def format_language_feedback(language_feedback: str, check: str | None = None) -
 	return "Deze zin is niet helemaal correct, probeer het nog eens."
 
 
-def test_asr() -> None:
-	asr = WhisperASR(model_name="small", language="nl", device="cpu")
-	print("Speak now. Recording will stop after silence or timeout.")
-	text = asr.listen_and_transcribe()
-	print(f"Transcription: {text}")
+def create_asr(engine: str, model_name: str, device: str):
+	from asr import WhisperASR
+	return WhisperASR(model_name=model_name, language="nl", engine=engine, device=device)
 
 
 def correct_saved_errors(
@@ -80,7 +78,7 @@ if __name__ == "__main__":
 	conversation_reasoning = config.get("conversation_reasoning")
 	print(f"Using conversation model: {conversation_model_name} with temperature: {conversation_temperature}")
 	print(f"Conversation keep_alive: {conversation_keep_alive}, reasoning: {conversation_reasoning}")
-	
+
 	language_check_mode = config.get("language_check_mode", "regels")
 	correct_errors = config.get("correct_errors", False)
 	
@@ -91,6 +89,8 @@ if __name__ == "__main__":
 	piper_model_path = config.get("piper_model_path", config.get("tts_model_path"))
 	piper_config_path = config.get("piper_config_path", config.get("tts_config_path"))
 	talking_head_backend = config.get("talking_head", "uit")
+	asr_engine = config.get("asr_engine", "faster_whisper")
+	asr_model_name = config.get("asr_model_name", "large-v3")
 
 	conversation_theme = config.get("conversation_theme", "kennismaken")
 	language_level = config.get("language_level", "A2")
@@ -119,7 +119,10 @@ if __name__ == "__main__":
 	
 	device = "cuda" if torch.cuda.is_available() else "cpu"
 	print(f"Using device: {device}")
-	asr = WhisperASR(model_name="small", language="nl", device=device) if input_format == "speech" else None		# ASR using FasterWhisper
+	asr = None
+	if input_format == "speech":
+		print(f"Using ASR engine: {asr_engine} (model: {asr_model_name})")
+		asr = create_asr(asr_engine, asr_model_name, device)
 
 	if output_format == "speech":
 		tts = None

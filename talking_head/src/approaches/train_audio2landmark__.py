@@ -51,15 +51,6 @@ class Audio2landmark_model():
         self.std_face_id = torch.tensor(self.std_face_id, 
                                         requires_grad=False, 
                                         dtype=torch.float).to(device)
-        self.eval_data = Audio2landmark_Dataset(dump_dir='examples/dump',
-                                                dump_name='random',
-                                                status='val',
-                                               num_window_frames=18,
-                                               num_window_step=1)
-        self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=1,
-                                                           shuffle=False, num_workers=0,
-                                                           collate_fn=self.eval_data.my_collate_in_segments)
-#        print('EVAL num videos: {}'.format(len(self.eval_data)))
 
         # Step 3: Load model
         self.G = Audio2landmark_pos(drop_out=0.5,
@@ -274,7 +265,20 @@ class Audio2landmark_model():
                 idx = i
         return idx
 
+    def __load_eval_data__(self):
+        # the dump files in examples/dump are rewritten for every new sentence,
+        # so the dataset is reloaded on every call while the models stay loaded
+        self.eval_data = Audio2landmark_Dataset(dump_dir='examples/dump',
+                                                dump_name='random',
+                                                status='val',
+                                               num_window_frames=18,
+                                               num_window_step=1)
+        self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=1,
+                                                           shuffle=False, num_workers=0,
+                                                           collate_fn=self.eval_data.my_collate_in_segments)
+
     def test(self, au_emb=None):
+        self.__load_eval_data__()
         with torch.no_grad():
             self.__train_pass__(au_emb, vis_fls=False)
             

@@ -37,6 +37,7 @@ def load_module_from_path(module_name: str, module_path: Path) -> ModuleType:
 	module_dir = str(module_path.parent)
 	previous_cwd = os.getcwd()
 	added_to_syspath = False
+
 	try:
 		if module_dir not in sys.path:
 			sys.path.insert(0, module_dir)

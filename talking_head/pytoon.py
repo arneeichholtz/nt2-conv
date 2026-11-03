@@ -17,7 +17,7 @@ from pathlib import Path
 from piper import PiperVoice, SynthesisConfig
 import gtts 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, astuple
 import subprocess as sp 
 from subprocess import DEVNULL, call
 import timeit
@@ -110,54 +110,70 @@ def move_figure(f, x, y):
     if window is None:
         return
 
-    backend = matplotlib.get_backend()
-    if backend == 'TkAgg':
+    backend = matplotlib.get_backend().lower()
+    if backend == 'tkagg':
         if hasattr(window, 'wm_geometry'):
             window.wm_geometry("+%d+%d" % (x, y))
         elif hasattr(window, 'geometry'):
             window.geometry("+%d+%d" % (x, y))
-    elif backend == 'WXAgg':
+    elif backend == 'wxagg':
         if hasattr(window, 'SetPosition'):
             window.SetPosition((x, y))
     elif hasattr(window, 'move'):
         # This works for QT and GTK when the method exists.
         window.move(x, y)
 
-##
-# add audio to a video clip.
-##
-def add_audio(imagefile, speechfile, outputfile):
-    if os.path.exists(outputfile):
-        os.remove(outputfile)
-    xxx = [
-        'ffmpeg',
-        '-loglevel',
-        'error',
-        '-i',
-        imagefile,
-        '-i',
-        speechfile,
-        outputfile ]
-#    print(xxx)
-    code = sp.run(xxx)
-    return code
+
+'''
+Display settings for the talking head window.
+
+The video (ffplay) is placed exactly over the still image, so only these
+values need to be changed to resize or move the head on the screen.
+'''
+DISPLAY_HEIGHT = 768                 # height of the head in pixels (same size as MakeItTalk: 256 x 3.0)
+DISPLAY_X, DISPLAY_Y = 200, 200      # screen position of the upper left corner of the window
+VIDEO_OFFSET_X, VIDEO_OFFSET_Y = 0, 0  # fine-tune the video position (pixels) if it does not overlap the image exactly
 
 
-def playVideo(videofile, baseImage):
+def image_screen_rect(f, im):
+    """Return the screen rectangle (left, top, width, height) in pixels of image im in figure f."""
+    if not hasattr(f.canvas, 'get_tk_widget'):
+        # not a Tk window: assume the image fills the window at DISPLAY_X, DISPLAY_Y
+        height, width = im.get_array().shape[:2]
+        scale = DISPLAY_HEIGHT / height
+        return DISPLAY_X, DISPLAY_Y, int(round(width * scale)), DISPLAY_HEIGHT
+    widget = f.canvas.get_tk_widget()
+    widget.update_idletasks()
+    bbox = im.get_window_extent()    # pixels inside the canvas, origin at the bottom left
+    # round the edges (not the size) so the video covers every partially drawn pixel row/column
+    left = widget.winfo_rootx() + int(np.floor(bbox.x0))
+    right = widget.winfo_rootx() + int(np.ceil(bbox.x1))
+    top = widget.winfo_rooty() + int(np.floor(f.bbox.height - bbox.y1))
+    bottom = widget.winfo_rooty() + int(np.ceil(f.bbox.height - bbox.y0))
+    return left, top, right - left, bottom - top
 
-    blank = np.ones((baseImage.shape[0], baseImage.shape[1], baseImage.shape[2]), dtype='uint8') * 255
-    px = 0.5/plt.rcParams['figure.dpi']  # pixel in inches
-    width, heigth = (baseImage.shape[0]*px, baseImage.shape[1]*px)
+
+def show_image(baseImage):
+    """Show the still image and return the figure and the image."""
+    px = (DISPLAY_HEIGHT / baseImage.shape[0]) / plt.rcParams['figure.dpi']  # pixel in inches
+    width, heigth = (baseImage.shape[1]*px, baseImage.shape[0]*px)
     with plt.rc_context({'toolbar': 'None'}):
         f = plt.figure(figsize=(width, heigth))
-        move_figure(f, 250, 250)
+        f.subplots_adjust(left=0, right=1, bottom=0, top=1)
+        move_figure(f, DISPLAY_X, DISPLAY_Y)
         plt.xticks([])
         plt.yticks([])
-        plt.imshow(blank)
+        im = plt.imshow(baseImage)
         plt.axis('off')
         plt.show(block=False)
         plt.pause(0.1)
-    
+    return f, im
+
+def playVideo(videofile, baseImage):
+
+    # place the video exactly over the still image (also if the window has been moved)
+    left, top, width, height = image_screen_rect(fig, still)
+
     xxx = [
         'ffplay',
         '-hide_banner',
@@ -165,35 +181,28 @@ def playVideo(videofile, baseImage):
         '-autoexit',
         '-loglevel',
         'panic',
-        '-x',
-        '480',
+        '-x',       # display width
+        str(width),
         '-y',
-        '540',
+        str(height),      # display height
         '-left',
-        '474',
+        str(left + VIDEO_OFFSET_X),
         '-top',
-        '518',
+        str(top + VIDEO_OFFSET_Y),
         videofile
         ]
 
     code = sp.run(xxx)
-    plt.close(f)
-    
-    baseImage = np.load('assets/happypose.npy')
-    with plt.rc_context({'toolbar': 'None'}):
-        f = plt.figure(figsize=(width, heigth))
-        move_figure(f, 250, 250)
-        plt.xticks([])
-        plt.yticks([])
-        plt.imshow(baseImage)
-        plt.axis('off')
-        plt.show(block=False)
-        plt.pause(0.1)
 
     return code
 
-def picts2video(pict_list, framerate):
-    height, width, ch = pict_list[0].shape 
+
+##
+# Convert the sequence of (bgr) pictures together with the audio to an mp4 file
+# in a single ffmpeg call, so the video is encoded only once.
+##
+def picts2video(pict_list, framerate, audio_file, outputfile):
+    height, width, ch = pict_list[0].shape
 
     dimension = '{}x{}'.format(width, height)
     f_format = 'bgr24' # remember OpenCV uses bgr format
@@ -201,30 +210,29 @@ def picts2video(pict_list, framerate):
 
     command = ['ffmpeg',
             '-y',
+            '-loglevel', 'error',
             '-f', 'rawvideo',
 #            '-vcodec','rawvideo',
             '-s', dimension,
             '-pix_fmt', 'bgr24',
             '-r', fps,
             '-i', '-',
-            '-an',
+            '-i', audio_file,
             '-vcodec', 'mpeg4',
 #            '-b:v', '5000k',
-            'temp.mp4' ]
+            outputfile ]
 
     proc = sp.Popen(command, stdin=sp.PIPE, stderr=DEVNULL)
 
     for frame in pict_list:
-        picture = rgba2rgb(bgra_to_rgba(frame)).astype(np.uint8)
-        proc.stdin.write(picture)
-        
+        proc.stdin.write(np.ascontiguousarray(frame, dtype=np.uint8))
+
     proc.stdin.close()
-#    proc.stderr.close()
-#    proc.wait()
+    proc.wait()     # the video must be complete before it is played
 
 
 '''
-We use Piper stuf for implementing a (too) detailed G2P.
+We use Piper stuff for implementing a (too) detailed G2P.
 '''
 def load_config(path: Path) -> dict:
 	if not path.exists():
@@ -233,9 +241,9 @@ def load_config(path: Path) -> dict:
 	return data or {}
 
 root = Path(__file__).resolve().parent
-config = load_config(root.parent / "config.yml")
-model_path = config.get("piper_model_path", config.get("tts_model_path"))
-config_path = config.get("piper_config_path", config.get("tts_config_path"))
+config = load_config(root / "config.yml")
+model_path = config.get("tts_model_path")
+config_path = config.get("tts_config_path")
 
 
 def read_json(file: str) -> dict:
@@ -417,6 +425,23 @@ def blink_manager(idx, fps):
 
     return eyes
 
+##
+# Caches for the pose and mouth images, so every image file is read (and transformed) only once.
+##
+pose_cache = {}
+mouth_cache = {}
+
+def load_pose(pose_file):
+    if pose_file not in pose_cache:
+        pose_cache[pose_file] = cv2.imread(pose_file, cv2.IMREAD_UNCHANGED)
+    return pose_cache[pose_file]
+
+def cached_mouth_transformation(mouth_file, mouth_coord) -> Image:
+    key = (mouth_file, astuple(mouth_coord))
+    if key not in mouth_cache:
+        mouth_cache[key] = mouth_transformation(mouth_file, mouth_coord)
+    return mouth_cache[key]
+
 def mouth_transformation(mouth_file, mouth_coord) -> Image:
     """Transforms mouth image with scaling, flipping, and rotation.
         This transformation is applied because, the same mouth shape images
@@ -532,6 +557,8 @@ def forced_align(speechfile, transliteration, VISEMES):
 #
 ## alignment2visemes
 #
+#    print('total_length', total_length, '# tokens', len(alignment[0]))
+
     visemes = []
     startframes = [[], []]
     speechStart = alignment[1][0]
@@ -568,7 +595,6 @@ def forced_align(speechfile, transliteration, VISEMES):
             visemes.append(visms[0])
         for kk in range(span//2, span):
             visemes.append(visms[1])
-            
     return visemes, startframes
 
 #####
@@ -593,14 +619,8 @@ def build_pose_sequence(sequence, assets, fps):
 
     
     # Create mouth PIL image for every frame, with image transformations based on pose
-    transformed_image = mouth_transformation('assets/visemes/positive/' + sequence[0], mouth_coordinates[0])
-    mouth_images.append(transformed_image)
-    for ii in range(1, len(sequence)):
-        if sequence[ii] == sequence[ii-1]:
-            mouth_images.append(transformed_image)
-        else:
-            transformed_image = mouth_transformation('assets/visemes/positive/' + sequence[ii], mouth_coordinates[ii])
-            mouth_images.append(transformed_image)
+    for ii in range(len(sequence)):
+        mouth_images.append(cached_mouth_transformation('assets/visemes/positive/' + sequence[ii], mouth_coordinates[ii]))
 
     return pose_files, mouth_images, mouth_coordinates
 
@@ -608,43 +628,39 @@ def build_pose_sequence(sequence, assets, fps):
 #######################
 
 def compile_animation(pose_files, image_files, mouth_coords, audio_file):
+    time_00 = timeit.default_timer()
     final_frames = []
     previous_pose = None
     previous_mouth = None
     for i, _ in enumerate(pose_files):
+        # mouth images come from a cache, so identical mouths are the same object ('is' is
+        # much cheaper than '==', which compares the image contents)
+        if pose_files[i] == previous_pose and image_files[i] is previous_mouth:
+            final_frames.append(final_frame)
+            continue
         if not pose_files[i] == previous_pose:
-            previous = pose_files[i]
-            newframe = cv2.imread(pose_files[i][1:], cv2.IMREAD_UNCHANGED)
-#        frame = newframe.copy()
-            previous_mouth = image_files[i]
-            final_frame = render_frame(
-                pose_img=newframe,
-                mouth_img=image_files[i],
-                mouth_coord=mouth_coords[i],
-            )
-            final_frames.append(final_frame)
-        elif pose_files[i] == previous_pose and image_files[i] == previous_mouth:
-            final_frames.append(final_frame)
-        else:
-            previous_mouth = image_files[i]
-            final_frame = render_frame(
-                pose_img=newframe,
-                mouth_img=image_files[i],
-                mouth_coord=mouth_coords[i],
-            )           
+            previous_pose = pose_files[i]
+            newframe = load_pose(pose_files[i][1:])
+        previous_mouth = image_files[i]
+        final_frame = render_frame(
+            pose_img=newframe,
+            mouth_img=image_files[i],
+            mouth_coord=mouth_coords[i],
+        )
+        # convert to bgr once per rendered frame, instead of once per video frame
+        final_frame = rgba2rgb(bgra_to_rgba(final_frame))
+        final_frames.append(final_frame)
 
     #
-    # dump the animation in form of a video
+    # dump the animation together with the audio in form of a video
     #
-##    np.save('numpyPictures.npy', np.asarray(final_frames))
     fps = 48
-    picts2video(final_frames, fps)
-
     withspeech = audio_file.split('/')[-1].split('.')[0] + '.mp4'
-    add_audio('temp.mp4', audio_file, withspeech)
-    
+    picts2video(final_frames, fps, audio_file, withspeech)
+    time_01 = timeit.default_timer()
+
     code = playVideo(withspeech, newframe)
-    np.save('picture.npy', newframe)
+    # print('time in creating the video', time_01 - time_00)
     return len(final_frames) / fps
 
 
@@ -652,6 +668,10 @@ def talkingHead_gtts(prompt):
     tts = gtts.gTTS(prompt, lang='nl')
     tts.save('tts.mp3')
     result, start_frames = forced_align('tts.mp3', prompt, VISEMES)
+#
+# result contains a sequence of viseme picture names.
+# 48 is frames/sec (fps)
+#
     poses, images, coordinates = build_pose_sequence(result, assets, 48)
     duration = compile_animation(poses, images, coordinates, 'tts.mp3')
     
@@ -659,16 +679,26 @@ def talkingHead_gtts(prompt):
 def talkingHead_piper(prompt):
     g2p.speak(prompt)
     result, start_frames = forced_align('tts.wav', prompt, VISEMES)
+
     poses, images, coordinates = build_pose_sequence(result, assets, 48)
     duration = compile_animation(poses, images, coordinates, 'tts.wav')
     
+####
+# Initialize display
+###
+
+baseImage = np.load('assets/happypose.npy')
+blank = np.ones((baseImage.shape[0], baseImage.shape[1], baseImage.shape[2]), dtype='uint8') * 255
+fig, still = show_image(baseImage)
+
+
 
 
 if __name__ == "__main__":
 
     prompts = ["goedemiddag. hoe gaat het met jou vandaag", 
                "waar woon je in Nederland?", "had je ook werk in Finland?"]
-    for prompt in prompts[:]:
+    for prompt in prompts:
         talkingHead_piper(prompt)
 
     sys.exit()

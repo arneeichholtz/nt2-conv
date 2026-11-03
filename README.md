@@ -1,7 +1,7 @@
 # NT2 Conversation Tool
 
 A Dutch NT2 conversation assistant that provides interactive dialogue practice. The system combines:
-- **Automatic Speech Recognition (ASR)** – Transcribe spoken Dutch input using FasterWhisper
+- **Automatic Speech Recognition (ASR)** – Transcribe spoken Dutch input using Whisper or FasterWhisper
 - **Synthetic Conversations** - An LLM is prompted to perform a practice conversation with a student
 - **Text-to-Speech (TTS)** – Generate spoken replies with Piper or gTTS
 - **Language Checking** – Word-order and simple verb conjugation checks based on implemented rules or an LLM (language checks based on rules works partially and checks using LLM do not work)
@@ -16,7 +16,8 @@ A Dutch NT2 conversation assistant that provides interactive dialogue practice. 
 - `voices/`: TTS model files (Piper `.onnx` models)
 - `language_check_utils/`: Language checking utilities (word order, conjugation rules)
 - `generate.py`: LLM integration for conversation generation and correction
-- `asr.py`: Whisper-based automatic speech recognition
+- `asr.py`: Whisper-based (openai-whisper) automatic speech recognition (slower, better quality)
+- `asr_faster.py`: FasterWhisper-based automatic speech recognition (faster)
 - `text_to_speech.py`: TTS engine abstraction (Piper or gTTS)
 - `talking_head/`: Optional talking head animation system. This is the repository from Lou, some files are redundant.
 
@@ -60,6 +61,10 @@ All settings are managed in `config.yml`. Below is a comprehensive guide to each
 ### Input/Output Format
 - `input_format` (string): How user provides input – `text` (keyboard) or `speech` (microphone via ASR)
 - `output_format` (string): How system responds – `text` (printed) or `speech` (TTS + optional talking head)
+
+### Speech Recognition (ASR) (only used when `input_format` is speech)
+- `asr_engine` (string): ASR backend – `whisper` (`asr.py`, better transcription quality) or `faster_whisper` (`asr_faster.py`, faster)
+- `asr_model_name` (string): Whisper model size, e.g. `small`, `medium`, `large-v3`
 
 ### Text-to-Speech (TTS) (only used when `output_format` is speech)
 - `tts_engine` (string): TTS backend – `piper` (Piper ONNX) or `gtts` (Google Text-to-Speech)

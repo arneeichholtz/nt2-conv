@@ -8,7 +8,10 @@ language_level: A2
 input_format: speech                       # speech or text
 output_format: speech                      # speech or text
 
-talking_head: makeittalk                         # options: uit, pytoon, makeittalk
+asr_engine: faster_whisper                 # options: faster_whisper (default, faster), whisper (openai-whisper)
+asr_model_name: large-v3-turbo                    # whisper model size, e.g. small, medium, large-v3
+
+talking_head: pytoon                         # options: uit, pytoon, makeittalk
 tts_engine: piper                           # options: piper, gtts 
 
 language_check_mode: uit             # options: uit, llm, regels
@@ -22,4 +25,4 @@ checker_reasoning: True
 
 piper_model_path: voices/nl_NL-ronnie-medium.onnx
 piper_config_path: voices/nl_NL-ronnie-medium.onnx.json
-tts_speaker_id: null    # Used in the case of multiple speakers.
+tts_speaker_id: null    # Used in the case of multiple speakers. 

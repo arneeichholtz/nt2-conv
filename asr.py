@@ -7,16 +7,18 @@ from typing import Optional
 import numpy as np
 import pyaudio
 import webrtcvad
-from faster_whisper import WhisperModel
+
+ASR_ENGINES = {"faster_whisper", "whisper"}
 
 
 class WhisperASR:
-	"""Microphone ASR using FasterWhisper with VAD-based endpointing."""
+	"""Microphone ASR using FasterWhisper or OpenAI Whisper with VAD-based endpointing."""
 
 	def __init__(
 		self,
-		model_name: str = "small",
+		model_name: str = "large-v3-turbo",
 		language: str = "nl",
+		engine: str = "faster_whisper",
 		sample_rate: int = 16000,
 		vad_aggressiveness: int = 2,
 		download_root: Optional[str] = None,
@@ -32,12 +34,24 @@ class WhisperASR:
 		self.save_directory = Path(save_directory) if save_directory else None
 		self.save_recordings = save_recordings
 		self.save_transcriptions = save_transcriptions
-		self.model = WhisperModel(
-			model_name,
-			device=self.device,
-			download_root=download_root,
-			compute_type="float16" if self.device != "cpu" else "int8",
-		)
+
+		engine = str(engine).strip().lower()
+		if engine not in ASR_ENGINES:
+			print(f"Unknown asr_engine '{engine}', falling back to faster_whisper.")
+			engine = "faster_whisper"
+		self.engine = engine
+
+		if self.engine == "faster_whisper":
+			from faster_whisper import WhisperModel
+			self.model = WhisperModel(
+				model_name,
+				device=self.device,
+				download_root=download_root,
+				compute_type="float16" if self.device != "cpu" else "int8",
+			)
+		else:
+			import whisper
+			self.model = whisper.load_model(model_name, device=self.device, download_root=download_root)
 
 	@staticmethod
 	def list_input_devices() -> list[dict]:
@@ -144,14 +158,29 @@ class WhisperASR:
 		if audio is None or len(audio) == 0:
 			return ""
 
-		segments, _info = self.model.transcribe(
-			audio,
-			language=self.language,
-			beam_size=5,
-			vad_filter=False,
-			initial_prompt=initial_prompt,
-		)
-		text = " ".join(segment.text.strip() for segment in segments).strip()
+		start_time = time.perf_counter()
+		if self.engine == "faster_whisper":
+			segments, _info = self.model.transcribe(
+				audio,
+				language=self.language,
+				task="transcribe",
+				beam_size=5,
+				vad_filter=False,
+				initial_prompt=initial_prompt,
+			)
+			# segments is a lazy generator; transcription happens while iterating
+			text = " ".join(segment.text.strip() for segment in segments).strip()
+		else:
+			result = self.model.transcribe(
+				audio,
+				language=self.language,
+				task="transcribe",
+				beam_size=5,
+				initial_prompt=initial_prompt,
+				fp16=self.device != "cpu",
+			)
+			text = result["text"].strip()
+		print(f"Transcription took {time.perf_counter() - start_time:.2f} seconds")
 		return text
 
 	def listen_and_transcribe(
@@ -170,9 +199,8 @@ class WhisperASR:
 		return transcript
 
 
-
-def test_asr() -> None:
-	asr = WhisperASR(model_name="small", language="nl")
+def test_asr(engine: str = "faster_whisper") -> None:
+	asr = WhisperASR(model_name="small", language="nl", engine=engine)
 	print("Speak now. Recording will stop after silence or timeout.")
 	text = asr.listen_and_transcribe()
 	print(f"Transcription: {text}")
