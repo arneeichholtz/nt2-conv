@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Sequence
 
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama      # from langchain_community.chat_models import ChatOllama
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 

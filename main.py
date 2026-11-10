@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 import string
 import time
@@ -40,6 +41,13 @@ def format_language_feedback(language_feedback: str, check: str | None = None) -
 	return "Deze zin is niet helemaal correct, probeer het nog eens."
 
 
+def save_transcript_line(transcript_path: Path | None, speaker: str, text: str) -> None:
+	if transcript_path is None:
+		return
+	with transcript_path.open("a", encoding="utf-8") as transcript_file:
+		transcript_file.write(f"{speaker}: {text}\n")
+
+
 def create_asr(engine: str, model_name: str, device: str):
 	from asr import WhisperASR
 	return WhisperASR(model_name=model_name, language="nl", engine=engine, device=device)
@@ -76,12 +84,13 @@ if __name__ == "__main__":
 	conversation_temperature = config.get("conversation_temperature")
 	conversation_keep_alive = config.get("conversation_keep_alive")
 	conversation_reasoning = config.get("conversation_reasoning")
-	print(f"Using conversation model: {conversation_model_name} with temperature: {conversation_temperature}")
-	print(f"Conversation keep_alive: {conversation_keep_alive}, reasoning: {conversation_reasoning}")
+	# print(f"Using conversation model: {conversation_model_name} with temperature: {conversation_temperature}")
+	# print(f"Conversation keep_alive: {conversation_keep_alive}, reasoning: {conversation_reasoning}")
 
 	language_check_mode = config.get("language_check_mode", "regels")
 	correct_errors = config.get("correct_errors", False)
-	
+	save_transcription = config.get("save_transcription", False)
+
 	input_format = config.get("input_format", "text")
 	output_format = config.get("output_format", "text")
 	tts_engine = config.get("tts_engine", "piper")
@@ -115,13 +124,13 @@ if __name__ == "__main__":
 		print(f"Using manual language checks: {', '.join(manual_language_checks)}")
 	else:
 		manual_language_checks = []
-		print("Language checker is disabled")
+		# print("Language checker is disabled")
 	
 	device = "cuda" if torch.cuda.is_available() else "cpu"
-	print(f"Using device: {device}")
+	# print(f"Using device: {device}")
 	asr = None
 	if input_format == "speech":
-		print(f"Using ASR engine: {asr_engine} (model: {asr_model_name})")
+		# print(f"Using ASR engine: {asr_engine} (model: {asr_model_name})")
 		asr = create_asr(asr_engine, asr_model_name, device)
 
 	if output_format == "speech":
@@ -129,7 +138,7 @@ if __name__ == "__main__":
 		if talking_head_backend not in {"", "uit", "off", "none", "false", "0"}:
 			try:
 				tts = create_talking_head_renderer(root, talking_head_backend, tts_engine)
-				print(f"Using talking head backend: {talking_head_backend} ({tts_engine})")
+				# print(f"Using talking head backend: {talking_head_backend} ({tts_engine})")
 			except Exception as exc:
 				raise RuntimeError(
 					f"Talking head init failed for backend '{talking_head_backend}' and engine '{tts_engine}': {exc}"
@@ -193,7 +202,14 @@ if __name__ == "__main__":
 		locatie=location
 	)
 
+	transcript_path = None
+	if save_transcription:
+		transcript_dir = root / "transcripties"
+		transcript_dir.mkdir(exist_ok=True)
+		transcript_path = transcript_dir / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+
 	print(first_line)
+	save_transcript_line(transcript_path, "AI Docent", first_line)
 	if output_format == "speech" and tts is not None:
 		tts.speak(first_line)
 
@@ -218,6 +234,7 @@ if __name__ == "__main__":
 			user_text = input("Jij: ").strip()
 			if not user_text:
 				continue
+		save_transcript_line(transcript_path, "Leerling", user_text)
 
 		clean_text = user_text.lower().translate(str.maketrans("", "", string.punctuation)).strip()		# Remove punctuation and whitespace for comparison
 		if clean_text in {"/quit", "/exit", "tot ziens", "doei", "stop", "fijne dag", "fijn weekend", "bedankt", "dankjewel", "dankuwel", "dank u wel", "dank je wel"}:
@@ -263,6 +280,7 @@ if __name__ == "__main__":
 				manual_language_result.get("check") if language_check_mode == "regels" else None,
 			)
 			print(f"Taalfeedback: {feedback_to_print}")
+			save_transcript_line(transcript_path, "AI Docent", feedback_to_print)
 			if output_format == "speech" and tts is not None:
 				tts.speak(feedback_to_print)
 			continue
@@ -283,6 +301,7 @@ if __name__ == "__main__":
 		# print(f"[timing] Conversation model took {time.perf_counter() - reply_start_time:.3f}s")
 
 		print(reply)
+		save_transcript_line(transcript_path, "AI Docent", reply)
 		if output_format == "speech" and tts is not None:
 			tts.speak(reply)
 		messages.append(AIMessage(content=reply))

@@ -1,17 +1,18 @@
 conversation_model_name: qwen2.5:7b-instruct      # qwen2.5         # gemma4:e2b        
 conversation_temperature: 0.8
 conversation_keep_alive: 3m
-conversation_reasoning: True
+conversation_reasoning: False
 
-conversation_theme: wonen          # options: winkelen, kennismaken, wonen
+conversation_theme: wonen         # options: winkelen, kennismaken, wonen
 language_level: A2
 input_format: speech                       # speech or text
 output_format: speech                      # speech or text
+save_transcription: False                  # True = save the conversation as a .txt in the transcripties folder
 
 asr_engine: faster_whisper                 # options: faster_whisper (default, faster), whisper (openai-whisper)
 asr_model_name: large-v3-turbo                    # whisper model size, e.g. small, medium, large-v3
 
-talking_head: pytoon                         # options: uit, pytoon, makeittalk
+talking_head: makeittalk                      # options: uit, pytoon, makeittalk
 tts_engine: piper                           # options: piper, gtts 
 
 language_check_mode: uit             # options: uit, llm, regels
@@ -21,8 +22,8 @@ correct_errors: False                           # True = ask the LLM to correct 
 checker_model_name: qwen2.5:7b-instruct           # used when language_check_mode is llm
 checker_temperature: 0
 checker_keep_alive: 3m 
-checker_reasoning: True
+checker_reasoning: False
 
 piper_model_path: voices/nl_NL-ronnie-medium.onnx
 piper_config_path: voices/nl_NL-ronnie-medium.onnx.json
-tts_speaker_id: null    # Used in the case of multiple speakers. 
+tts_speaker_id: null    # Used in the case of multiple speakers.

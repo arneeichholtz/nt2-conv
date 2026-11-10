@@ -35,6 +35,11 @@ class WhisperASR:
 		self.save_recordings = save_recordings
 		self.save_transcriptions = save_transcriptions
 
+		# PyAudio init + opening a stream takes ~0.5 s, so do it once and only start/stop the stream per utterance
+		self.pa = pyaudio.PyAudio()
+		self.stream = None
+		self.stream_key = None
+
 		engine = str(engine).strip().lower()
 		if engine not in ASR_ENGINES:
 			print(f"Unknown asr_engine '{engine}', falling back to faster_whisper.")
@@ -65,17 +70,30 @@ class WhisperASR:
 		pa.terminate()
 		return devices
 
-	def open_stream(self, device_index: Optional[int], block_size: int) -> tuple[pyaudio.PyAudio, pyaudio.Stream]:
-		pa = pyaudio.PyAudio()
-		stream = pa.open(
-			format=pyaudio.paInt16,
-			channels=1,
-			rate=self.sample_rate,
-			input=True,
-			frames_per_buffer=block_size,
-			input_device_index=device_index,
-		)
-		return pa, stream
+	def open_stream(self, device_index: Optional[int], block_size: int) -> pyaudio.Stream:
+		"""Return a started input stream, reusing the previous one when the settings are unchanged."""
+		key = (device_index, block_size)
+		if self.stream is None or self.stream_key != key:
+			if self.stream is not None:
+				self.stream.close()
+			self.stream = self.pa.open(
+				format=pyaudio.paInt16,
+				channels=1,
+				rate=self.sample_rate,
+				input=True,
+				frames_per_buffer=block_size,
+				input_device_index=device_index,
+				start=False,
+			)
+			self.stream_key = key
+		self.stream.start_stream()
+		return self.stream
+
+	def close(self) -> None:
+		if self.stream is not None:
+			self.stream.close()
+			self.stream = None
+		self.pa.terminate()
 
 	def save_utterance(self, audio: np.ndarray, transcript: str) -> None:
 		if self.save_directory is None:
@@ -109,7 +127,7 @@ class WhisperASR:
 		if block_size <= 0:
 			raise ValueError("frame_ms results in empty block size")
 
-		pa, stream = self.open_stream(device_index, block_size)
+		stream = self.open_stream(device_index, block_size)
 
 		ring_buffer = collections.deque(maxlen=max(1, padding_ms // frame_ms))
 		voiced_frames: list[bytes] = []
@@ -142,9 +160,8 @@ class WhisperASR:
 				if (now - start_time) >= max_record_seconds:
 					break
 		finally:
+			# stopping (not closing) keeps the stream ready and drops audio played while the head is talking
 			stream.stop_stream()
-			stream.close()
-			pa.terminate()
 
 		if not voiced_frames:
 			return None
@@ -180,7 +197,7 @@ class WhisperASR:
 				fp16=self.device != "cpu",
 			)
 			text = result["text"].strip()
-		print(f"Transcription took {time.perf_counter() - start_time:.2f} seconds")
+		# print(f"Transcription took {time.perf_counter() - start_time:.2f} seconds")
 		return text
 
 	def listen_and_transcribe(

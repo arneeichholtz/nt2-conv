@@ -47,3 +47,7 @@ talking_head/examples/ckpt/
 
 *.npy
 *.mp4
+*.wav
+*.pickle
+
+/transcripties

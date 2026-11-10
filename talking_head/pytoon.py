@@ -169,6 +169,21 @@ def show_image(baseImage):
         plt.pause(0.1)
     return f, im
 
+def trim_silence(wavfile, threshold=0.02, keep_ms=100):
+    """Remove leading/trailing silence (keeping keep_ms), so the head starts talking sooner and the video ends when the speech ends."""
+    with wave.open(wavfile, 'rb') as wav_file:
+        params = wav_file.getparams()
+        data = np.frombuffer(wav_file.readframes(params.nframes), dtype=np.int16)
+    amplitude = np.abs(data.astype(np.float32))
+    voiced = np.where(amplitude > threshold * amplitude.max())[0] if len(data) else []
+    if len(voiced) == 0:
+        return
+    keep = int(params.framerate * keep_ms / 1000)
+    data = data[max(0, voiced[0] - keep):min(len(data), voiced[-1] + keep)]
+    with wave.open(wavfile, 'wb') as wav_file:
+        wav_file.setparams(params)
+        wav_file.writeframes(data.tobytes())
+
 def playVideo(videofile, baseImage):
 
     # place the video exactly over the still image (also if the window has been moved)
@@ -240,10 +255,18 @@ def load_config(path: Path) -> dict:
 	data = yaml.safe_load(path.read_text(encoding="utf-8"))
 	return data or {}
 
-root = Path(__file__).resolve().parent
+# config.yml and the voice paths in it live in the project root (one level up)
+root = Path(__file__).resolve().parent.parent
 config = load_config(root / "config.yml")
-model_path = config.get("tts_model_path")
-config_path = config.get("tts_config_path")
+model_path = config.get("piper_model_path", config.get("tts_model_path"))
+config_path = config.get("piper_config_path", config.get("tts_config_path"))
+if model_path and config_path:
+	model_path = Path(model_path)
+	config_path = Path(config_path)
+	if not model_path.is_absolute():
+		model_path = root / model_path
+	if not config_path.is_absolute():
+		config_path = root / config_path
 
 
 def read_json(file: str) -> dict:
@@ -381,6 +404,7 @@ class phonemize():
                                     wav_file,
                                     set_wav_format=True
                                   )
+        trim_silence('tts.wav')
 
 ###
 # Define a phonemizer.

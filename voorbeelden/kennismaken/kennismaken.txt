@@ -8,7 +8,9 @@ Mila: Ik ben nog nooit in Amsterdam geweest.
 Anne: En wat doe je in Utrecht?
 Mila: Ik werk daar bij een bank. En jij? Wat doe jij in Amsterdam.
 Anne: Ik studeer rechten aan de universiteit van Amsterdam. Kom jij uit Nederland?
-Mila: Nee, ik kom uit Egypte. Ik woon nu drie jaar in Nederland, mijn vriend is Nederlander.
+Mila: Nee, ik kom uit Egypte.
+Anne: Hoe lang woon je al in Nederland?
+Mila: Ik woon nu drie jaar in Nederland, mijn vriend is Nederlander.
 Anne: Je spreekt al goed Nederlands, zeg!
 Mila: Dank je!
 
@@ -20,7 +22,9 @@ Mila: Ik woon in Utrecht. En waar woon jij?
 Anne: Ik woon in Nijmegen. En wat doe je in Utrecht?
 Mila: Ik werk in Utrecht als psycholoog. En jij? Wat doe jij in Nijmegen?
 Anne: Ik werk in Nijmegen in de bibliotheek. Kom jij uit Nederland?
-Mila: Nee, ik kom uit Pakistan maar ik woon nu vier jaar in Nederland.
+Mila: Nee, ik kom uit Pakistan.
+Anne: Hoe lang woon je al in Nederland?
+Mila: Ik woon nu vier jaar in Nederland.
 Anne: Je spreekt al goed Nederlands, zeg!
 Mila: Dank je!
 
@@ -32,12 +36,14 @@ Mila: Ik woon in Rotterdam. En waar woon jij?
 Anne: Ik woon in Eindhoven. Wat doe je in Rotterdam?
 Mila: Ik ben in Rotterdam bezig met mijn studie, ik studeer economie aan de Erasmus Universiteit. En jij? Wat doe jij in Eindhoven?
 Anne: Ik werk in Eindhoven in de supermarkt. Kom jij uit Nederland?
-Mila: Nee, ik kom uit Marokko maar ik woon nu al zeven jaar in Nederland.
+Mila: Nee, ik kom uit Marokko.
+Anne: Hoe lang woon je al in Nederland?
+Mila: ik woon nu al zeven jaar in Nederland.
 Anne: Het is leuk om je te ontmoeten Mila!
 Mila: Dat vind ik ook.
 
 VOORBEELD 4
-Willem: Hoi, wat is jouw naam?
+Willem: Hoi, hoe heet jij?
 Theo: Mijn naam is Theo.
 Willem: Wat ga je dit weekend doen, Theo?
 Theo: Ik ga dit weekend wandelen. 
@@ -45,21 +51,25 @@ Willem: Met wie ga je wandelen?
 Theo: Met mijn ouders.
 Willem. En waar gaan jullie wandelen?
 Theo: In het bos bij Haarlem, richting het strand.
-Willem: Veel plezier!
+Willem: Ga je vaker wandelen?
+Theo: Ja, ik wandel vaak in het weekend als het mooi weer is.
+Willem: Wonen je ouders daar in de buurt?
+Theo: Ja, mijn ouders wonen naast Haarlem.
+Willem: Veel plezier dit weekend!
 Theo: Dank je.
 
 VOORBEELD 5
-Willem: Hoi, wat is jouw naam?
+Willem: Hoi, hoe heet jij?
 Theo: Mijn naam is Theo.
 Willem: Wat ga je dit weekend doen, Theo?
 Theo: Ik ga zaterdag naar een nieuwe foto-expositie in Amsterdam. 
 Willem: Waar is de nieuwe expositie?
 Theo: In de Nieuwe Kerk, op de Dam.
 Willem: Hoeveel kost de entree?
-Theo: Een kaartje is 15 euro. Wil je ook mee?
-Willem: Ja, leuk. Waar spreken we af en hoe laat?
-Theo: Om 11 uur op de Dam, voor de Nieuwe Kerk, oke?
-Willem: Ja, dat is prima.
+Theo: Een kaartje is 15 euro.
+Willem: Ga je vaker naar foto-exposities?
+Theo: Ja, ik vind het leuk om naar exposities te gaan.
+Willem: Dat begrijp ik, veel plezier.
 
 VOORBEELD 6
 Willem: Hoi, hoe heet jij?
@@ -68,10 +78,8 @@ Willem: Wat ga je dit weekend doen, Theo?
 Theo: Ik ga zondag eerst boodschappen doen en daarna naar de film. 
 Willem: Naar welke film ga je?
 Theo: Het is een nieuwe film over leven in de gevangenis.
-Willem: Dat klinkt interessant.
-Theo: Wil je ook mee?
-Willem: Ja, dat wil ik wel. Waar is de bioscoop?
+Willem: Dat klinkt interessant. Waar is de bioscoop?
 Theo: In Amsterdam-West, achter het Vondelpark.
-Willem: Spreken we daar zondag af?
-Theo: Ja, om 3 uur in het vondelpark?
-Willem: Ja, dat is prima.
+Willem: Ga je vaker naar die bioscoop?
+Theo: Ja, dat is mijn favoriete bioscoop in Amsterdam.
+Willem: Dat snap ik, veel plezier.

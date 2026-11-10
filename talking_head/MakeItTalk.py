@@ -72,8 +72,20 @@ voice = PiperVoice.load(
             use_cuda=False,
         )
 
+def trim_silence(data, sf, threshold=0.02, keep_ms=100):
+    """Remove leading/trailing silence (keeping keep_ms), so the head starts talking sooner and the video ends when the speech ends."""
+    amplitude = np.abs(data.astype(np.float32))
+    voiced = np.where(amplitude > threshold * amplitude.max())[0]
+    if len(voiced) == 0:
+        return data
+    keep = int(sf * keep_ms / 1000)
+    return data[max(0, voiced[0] - keep):min(len(data), voiced[-1] + keep)]
+
 def make16kHz(wavfile):
     sf, data = readwav(wavfile)
+    data = trim_silence(data, sf)
+    # keep the trimmed original (22 kHz) as the audio of the video; the models need the 16 kHz copy
+    writewav(wavfile, sf, data)
     numsamplesIn = data.shape[0]
     numsamples16k = int(np.round(numsamplesIn*16000/sf))
     newdata = resample(data, numsamples16k)
@@ -127,7 +139,7 @@ Default hyper-parameters for the model.
 
 Basic setup for animation.
 '''
-default_head_name = 'cartoonboy'           # the image name (with no .jpg) to animate
+default_head_name = 'male_cartoon'          # the image name (with no .jpg) to animate
 ADD_NAIVE_EYE = True                 # whether add naive eye blink
 CLOSE_INPUT_FACE_MOUTH = False       # if your image has an opened mouth, put this as True, else False
 AMP_LIP_SHAPE_X = 2.                 # amplify the lip motion in horizontal direction
@@ -166,7 +178,7 @@ def show_image(baseImage):
         plt.axis('off')
         plt.show(block=False)
         plt.pause(0.1)
-    return f, image_screen_rect(f, im)
+    return f, im
 
 
 def match_target_amplitude(sound, target_dBFS):
@@ -253,9 +265,9 @@ class AutoVC_mel_Convertor():
         return aus
 
 
-def playVideo(videofile, baseImage):
-
-    f, (left, top, width, height) = show_image(baseImage)
+def playVideo(videofile, f, im):
+    """Play the video with ffplay exactly over the still image im that is already shown in figure f."""
+    left, top, width, height = image_screen_rect(f, im)
 
     xxx = [
         'ffplay',
@@ -277,11 +289,10 @@ def playVideo(videofile, baseImage):
 
     code = sp.run(xxx)
 
-    show_image(baseImage)
-
-    # keep only the most recent figure
-    for fignum in plt.get_fignums()[:-1]:
-        plt.close(fignum)
+    # the still image is still on screen underneath the video, so only redraw it
+    # (building a new figure here delayed the start of listening)
+    f.canvas.draw_idle()
+    f.canvas.flush_events()
 
     return code
 
@@ -330,7 +341,7 @@ class MakeItTalk:
                  ):
         self.headname = headname
         self.img = plt.imread('examples/' + headname + '.jpg')[:, :, ::-1]
-        show_image(self.img)
+        self.fig, self.im = show_image(self.img)
 
         allexamples = os.listdir('examples/shapefiles')
         found = False
@@ -375,8 +386,8 @@ class MakeItTalk:
             shape_3d, scale, shift = util.norm_input_face(shape_3d)
 
             os.makedirs('examples/shapefiles/', exist_ok=True)
-            np.savetxt('examples/shapefiles/' + opt_parser.jpg.replace('jpg', 'txt'), shape_3d)
-            fout = open('examples/shapefiles/' + opt_parser.jpg.replace('.jpg', '-scale_shift.txt'), 'w')
+            np.savetxt('examples/shapefiles/' + headname + '.txt', shape_3d)
+            fout = open('examples/shapefiles/' + headname + '-scale_shift.txt', 'w')
             fout.write(str(scale) + ',' + str(shift[0]) + ',' + str(shift[1]))
             fout.close()
             
@@ -390,7 +401,8 @@ class MakeItTalk:
         self.image_translation = Image_translation_block(single_test=True)
 
 
-    def talking_head(self):    
+    def talking_head(self, video_audio='examples/tts.wav'):
+        """video_audio is the audio put in the video; the models always use the 16 kHz examples/tts.wav."""
 
         ain = 'examples/tts.wav'
         wavname = 'tts.wav'
@@ -478,11 +490,11 @@ class MakeItTalk:
 
         ''' STEP 6: Imag2image translation '''
         with torch.no_grad():
-            self.image_translation.single_test(jpg=self.img, fls=fl)
+            self.image_translation.single_test(jpg=self.img, fls=fl, audio_file=video_audio)
 
         time_05 = timeit.default_timer()
         # print('time in step 6', time_05 - time_04)
-        return_code = playVideo('tts.mp4', self.img)
+        return_code = playVideo('tts.mp4', self.fig, self.im)
 
 talkingHead = MakeItTalk(default_head_name)
 
@@ -495,7 +507,7 @@ def talkingHead_gtts(prompt):
 
 def talkingHead_piper(prompt):
     speak(prompt)
-    talkingHead.talking_head()
+    talkingHead.talking_head(video_audio='tts.wav')    # original 22 kHz Piper audio
 
 if __name__ == "__main__":
     

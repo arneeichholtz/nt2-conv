@@ -55,7 +55,7 @@ class Image_translation_block():
 
         self.G.to(device)
 
-    def single_test(self, jpg=None, fls=None):
+    def single_test(self, jpg=None, fls=None, audio_file='examples/tts.wav'):
 
         self.G.eval()
         collectedPicts = []
@@ -118,9 +118,11 @@ class Image_translation_block():
                 '-pix_fmt', 'bgr24',
                 '-r', fps,
                 '-i', '-',
-                '-i', 'examples/tts.wav',
-                '-vcodec', 'mpeg4',
-    #            '-b:v', '5000k',
+                '-i', audio_file,
+                '-vcodec', 'libx264',
+                '-crf', '12',            # lower = better quality; 0 is lossless
+                '-preset', 'veryfast',
+                '-pix_fmt', 'yuv444p',   # full colour resolution; keeps hair/skin edges sharp
                 outputfile ]
 
         proc = sp.Popen(command, stdin=sp.PIPE, stderr=DEVNULL)
@@ -130,7 +132,7 @@ class Image_translation_block():
             proc.stdin.write(picture)
 
         proc.stdin.close()
-        proc.wait()     # tts.mp4 must be complete before it is played
+        proc.wait()     # tts.mp4 must be complete before it is played          --- REMOVE?
 
 
         '''
